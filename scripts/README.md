@@ -4,12 +4,16 @@
 
 *Make sure you have execution permissions*
 
+
+
 ## ENVIRONMENT VARIABLES
 
 All the important variables used for these scripts and libraries are located in the Parameter Store 
 of AWS Systems Manager.
  
 **Remember not to save sensitive information directly in scripts!**
+
+
 
 ### set-env-variable 
 *Add an environment variable to the Parameter Store*
@@ -19,8 +23,8 @@ of AWS Systems Manager.
 * -v, -value: Value of the variable
 * -d, -desc: Description of the variable
 #### Optional Arguments
-* -t, -type: Type of variable.  Optional.  Choices: 'String'|'StringList'|**'SecureString'**
-* -o, -overwrite: Whether to overwrite the parameter, if it already exists. Optional. Choices: True|**False**
+* -t, -type: Type of variable. Choices: 'String'|'StringList'|**'SecureString'**
+* -o, -overwrite: Whether to overwrite the variable value, if it already exists. Choices: True|**False**
 
 #### Output
 Returns nothing, if successful
