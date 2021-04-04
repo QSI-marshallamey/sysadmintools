@@ -1,12 +1,12 @@
 # AVAILABLE SCRIPTS
 
-*Make sure the scripts folder is in your $PATH*
+> *Make sure the scripts folder is in your $PATH*
 
-*Make sure you have execution permissions*
+> *Make sure you have execution permissions*
 
 
 
-## ENVIRONMENT VARIABLES
+## SCRIPTS FOR USING ENVIRONMENT VARIABLES
 
 All the important variables used for these scripts and libraries are located in the Parameter Store 
 of AWS Systems Manager.
