@@ -22,7 +22,7 @@
 #### Output
 Returns nothing, if successful
 
-### Example
+#### Example
 ```
 set-env-variable -n 'testVariable' -v '1234567890' -d 'A variable for testing only' -t 'String' -o True
 ```
