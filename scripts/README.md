@@ -10,20 +10,40 @@ of AWS Systems Manager.
  
 **Remember not to save sensitive information directly in scripts!**
 
-### set-env-variable
-### get-env-variable
-### delete-env-variable
+#### AVAILABLE SCRIPTS:
 
-### get-okta-user-list
+2. 
 
-### onboard-new-employees
+**set-env-variable** - *Add an environment variable to the Parameter Store*
+#### Required Arguments
+* -n, -name: Name of the variable
+* -v, -value: Value of the variable
+* -d, -desc: Description of the variable
+#### Optional Arguments
+* -t, -type: Type of variable.  Optional.  Choices: 'String'|'StringList'|**'SecureString'**
+* -o, -overwrite: Whether to overwrite the parameter, if it already exists. Optional. Choices: True|**False**
 
-### update-gsuite-emails
-### update-slack-emails
-### update-zoom-emails
+#### Output
+Returns nothing, if successful
 
-### send-email
-### send-text
+
+**get-env-variable** - *Retrieve an environment variable from the Parameter Store*
+* -n, -name: Name of the variable
+
+**delete-env-variable** - *Delete an environment variable from the Parameter Store*
+* -n, -name: Name of the variable
+
+**get-okta-user-list**
+
+**onboard-new-employees**
+**reset-gsuite-passwords.py** - *Resets GSuite password for all users*
+
+**update-gsuite-emails**
+**update-slack-emails**
+**update-zoom-emails**
+
+**send-email**
+**send-text**
 
 You will need access tokens to use many of the methods in the Staff class. The `getKeys()` method in the *Authentication* class will retrieve them from the *ADMIN_KEYS.py* file for use in other methods. A template for this file is included in the *files* directory.
 
@@ -50,11 +70,7 @@ You get the point.  Look it up and add the software application tokens you use f
 
 ## USAGE 
 
-#### AVAILABLE SCRIPTS:
 
-1. **onboard-new-employees.py** - *Adds an employee to system and creates necessary accounts for proper onboarding*
-
-2. **reset-all-passwords.py** - *Resets GSuite password for all users*
 
 #### CLASSES:
 
