@@ -1,0 +1,6 @@
+openpyxl
+twilio
+imapclient
+pyzmail
+requests
+selenium
