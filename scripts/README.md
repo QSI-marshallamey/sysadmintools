@@ -1,8 +1,8 @@
 # AVAILABLE SCRIPTS
 
-*Make sure the scripts folder is in your $PATH*
+:exclamation: *Make sure the scripts folder is in your $PATH*
 
-*Make sure you have execution permissions*
+:exclamation: *Make sure you have execution permissions*
 
 ---
 
