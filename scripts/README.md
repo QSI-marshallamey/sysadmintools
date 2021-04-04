@@ -10,8 +10,8 @@ All the important variables used for these scripts and libraries are located in 
 
 &nbsp;
 
-### set-env-variable 
-*Add an environment variable to the AWS Parameter Store*
+### 1. set-env-variable 
+*Adds an environment variable to the AWS Parameter Store*
 
 #### Required Arguments
 * -n, -name: Name of the variable
@@ -31,8 +31,8 @@ set-env-variable -n 'testVariable' -v '1234567890' -d 'A variable for testing on
 
 &nbsp;
 
-### get-env-variable
-*Retrieve an environment variable from the AWS Parameter Store*
+### 2. get-env-variable
+*Retrieves an environment variable from the AWS Parameter Store*
 
 #### Required Arguments
 * -n, -name: Name of the variable
@@ -44,7 +44,7 @@ get-env-variable -name 'testVariable'
 
 &nbsp;
 
-### delete-env-variable 
+### 3. delete-env-variable 
 *Delete an environment variable from the AWS Parameter Store*
 
 #### Required Arguments
@@ -62,20 +62,38 @@ delete-env-variable -name 'testVariable'
 All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
 
 
-### get-okta-user-list
+### 1. get-okta-user-list
 *Obtain a list of all users in an Okta instance*
 
 &nbsp;
 
+### 1.reset-gsuite-passwords.py
+*Resets GSuite password for all users*
+
+&nbsp;
+
+### 2.update-gsuite-emails
+
+&nbsp;
+
+### 3.update-slack-emails
+
+&nbsp;
+
+### 4.update-zoom-emails
+
+&nbsp;
+
+## SCRIPTS FOR ONBOARDING
+---
 **onboard-new-employees**
-**reset-gsuite-passwords.py** - *Resets GSuite password for all users*
 
-**update-gsuite-emails**
-**update-slack-emails**
-**update-zoom-emails**
+&nbsp;
 
-**send-email**
-**send-text**
+## SCRIPTS FOR COMMUNICATING
+---
+### 1. send-email
+### 2. send-text
 
 You will need access tokens to use many of the methods in the Staff class. The `getKeys()` method in the *Authentication* class will retrieve them from the *ADMIN_KEYS.py* file for use in other methods. A template for this file is included in the *files* directory.
 
