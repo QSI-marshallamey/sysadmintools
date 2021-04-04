@@ -7,7 +7,6 @@
 ## SCRIPTS FOR USING ENVIRONMENT VARIABLES
     All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
 
-&nbsp;
 
 ### set-env-variable 
 *Add an environment variable to the Parameter Store*
@@ -23,6 +22,7 @@
 #### Output
 Returns nothing, if successful
 
+&nbsp;
 
 ### get-env-variable
 *Retrieve an environment variable from the Parameter Store*
@@ -30,14 +30,23 @@ Returns nothing, if successful
 #### Required Arguments
 * -n, -name: Name of the variable
 
+&nbsp;
+
 ### delete-env-variable 
 *Delete an environment variable from the Parameter Store*
 
 #### Required Arguments
 * -n, -name: Name of the variable
 
+
+## SCRIPTS FOR DEALING WITH USERS
+    All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
+
+
 ### get-okta-user-list
 *Obtain a list of all users in an Okta instance*
+
+&nbsp;
 
 **onboard-new-employees**
 **reset-gsuite-passwords.py** - *Resets GSuite password for all users*
