@@ -5,6 +5,7 @@
 &nbsp;
 
 ## SCRIPTS FOR USING ENVIRONMENT VARIABLES
+---
     All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
 
 
