@@ -8,9 +8,10 @@
 ---
 All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
 
+&nbsp;
 
 ### set-env-variable 
-*Add an environment variable to the Parameter Store*
+*Add an environment variable to the AWS Parameter Store*
 
 #### Required Arguments
 * -n, -name: Name of the variable
@@ -31,7 +32,7 @@ set-env-variable -n 'testVariable' -v '1234567890' -d 'A variable for testing on
 &nbsp;
 
 ### get-env-variable
-*Retrieve an environment variable from the Parameter Store*
+*Retrieve an environment variable from the AWS Parameter Store*
 
 #### Required Arguments
 * -n, -name: Name of the variable
@@ -44,7 +45,7 @@ get-env-variable -name 'testVariable'
 &nbsp;
 
 ### delete-env-variable 
-*Delete an environment variable from the Parameter Store*
+*Delete an environment variable from the AWS Parameter Store*
 
 #### Required Arguments
 * -n, -name: Name of the variable
