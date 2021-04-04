@@ -1,8 +1,12 @@
 # AVAILABLE SCRIPTS
 
-:exclamation: *Make sure the scripts folder is in your $PATH*
+:exclamation: 
+
+*Make sure the scripts folder is in your $PATH*
 
 :exclamation: *Make sure you have execution permissions*
+
+:simple_smile:
 
 ---
 
