@@ -15,6 +15,7 @@ All the important variables used for these scripts and libraries are located in 
 * -n, -name: Name of the variable
 * -v, -value: Value of the variable
 * -d, -desc: Description of the variable
+
 #### Optional Arguments
 * -t, -type: Type of variable. Choices: 'String'|'StringList'|**'SecureString'**
 * -o, -overwrite: Whether to overwrite the variable value, if it already exists. Choices: True|**False**
@@ -69,15 +70,15 @@ All the important variables used for these scripts and libraries are located in 
 
 &nbsp;
 
-### 3.update-gsuite-emails
+### 3. update-gsuite-emails
 
 &nbsp;
 
-### 4.update-slack-emails
+### 4. update-slack-emails
 
 &nbsp;
 
-### 5.update-zoom-emails
+### 5. update-zoom-emails
 
 &nbsp;
 
