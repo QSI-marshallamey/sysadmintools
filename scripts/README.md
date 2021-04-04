@@ -64,7 +64,7 @@ All the important variables used for these scripts and libraries are located in 
 
 &nbsp;
 
-### 2. reset-gsuite-password.py
+### 2. reset-gsuite-password
 *Resets GSuite password for one or more users*
 
 &nbsp;
@@ -83,11 +83,14 @@ All the important variables used for these scripts and libraries are located in 
 
 ## SCRIPTS FOR ONBOARDING
 ---
-### onboard-new-employees
+### 1. onboard-new-employees
 
 &nbsp;
 
 ## SCRIPTS FOR COMMUNICATING
 ---
 ### 1. send-email
+
+&nbsp;
+
 ### 2. send-text
