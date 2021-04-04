@@ -1,20 +1,19 @@
-# System Admin Tools - Scripts
-*This is a toolbox for easy Python scripting in IT and System Administration*
+# AVAILABLE SCRIPTS
 
 *Make sure the scripts folder is in your $PATH*
+
 *Make sure you have execution permissions*
 
-## SETTING ENVIRONMENT VARIABLES
+## ENVIRONMENT VARIABLES
+
 All the important variables used for these scripts and libraries are located in the Parameter Store 
 of AWS Systems Manager.
  
 **Remember not to save sensitive information directly in scripts!**
 
-#### AVAILABLE SCRIPTS:
+### set-env-variable 
+*Add an environment variable to the Parameter Store*
 
-2. 
-
-**set-env-variable** - *Add an environment variable to the Parameter Store*
 #### Required Arguments
 * -n, -name: Name of the variable
 * -v, -value: Value of the variable
@@ -27,13 +26,20 @@ of AWS Systems Manager.
 Returns nothing, if successful
 
 
-**get-env-variable** - *Retrieve an environment variable from the Parameter Store*
+### get-env-variable
+*Retrieve an environment variable from the Parameter Store*
+
+#### Required Arguments
 * -n, -name: Name of the variable
 
-**delete-env-variable** - *Delete an environment variable from the Parameter Store*
+### delete-env-variable 
+*Delete an environment variable from the Parameter Store*
+
+#### Required Arguments
 * -n, -name: Name of the variable
 
-**get-okta-user-list**
+### get-okta-user-list
+*Obtain a list of all users in an Okta instance*
 
 **onboard-new-employees**
 **reset-gsuite-passwords.py** - *Resets GSuite password for all users*
