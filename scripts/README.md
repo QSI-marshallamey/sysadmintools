@@ -6,7 +6,7 @@
 
 ## SCRIPTS FOR USING ENVIRONMENT VARIABLES
 ---
-    All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
+All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
 
 
 ### set-env-variable 
@@ -57,7 +57,8 @@ delete-env-variable -name 'testVariable'
 &nbsp;
 
 ## SCRIPTS FOR DEALING WITH USERS
-    All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
+---
+All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
 
 
 ### get-okta-user-list
