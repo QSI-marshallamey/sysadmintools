@@ -17,7 +17,9 @@ of AWS Systems Manager.
  
 **Remember not to save sensitive information directly in scripts!**
 
-<br><br>
+&nbsp;
+
+&nbsp;
 
 ### set-env-variable 
 *Add an environment variable to the Parameter Store*
