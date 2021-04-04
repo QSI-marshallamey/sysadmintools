@@ -1,10 +1,10 @@
 # AVAILABLE SCRIPTS
 
-> *Make sure the scripts folder is in your $PATH*
+*Make sure the scripts folder is in your $PATH*
 
-> *Make sure you have execution permissions*
+*Make sure you have execution permissions*
 
-
+---
 
 ## SCRIPTS FOR USING ENVIRONMENT VARIABLES
 
@@ -13,7 +13,7 @@ of AWS Systems Manager.
  
 **Remember not to save sensitive information directly in scripts!**
 
-
+<br><br>
 
 ### set-env-variable 
 *Add an environment variable to the Parameter Store*
