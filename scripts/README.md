@@ -7,6 +7,7 @@
 ## SCRIPTS FOR USING ENVIRONMENT VARIABLES
     All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
 
+&nbsp;
 
 ### set-env-variable 
 *Add an environment variable to the Parameter Store*
