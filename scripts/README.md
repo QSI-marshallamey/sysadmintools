@@ -1,16 +1,11 @@
 # AVAILABLE SCRIPTS
-    Make sure the scripts folder is in your $PATH
-    Make sure you have execution permissions
-
----
-
-## SCRIPTS FOR USING ENVIRONMENT VARIABLES
-     All the important variables used for these scripts and libraries are located in the Parameter Store 
-of AWS Systems Manager.
- 
-**Remember not to save sensitive information directly in scripts!**
+    !! Make sure the scripts folder is in your $PATH !!
+    !! Make sure the scripts are executable !!
 
 &nbsp;
+
+## SCRIPTS FOR USING ENVIRONMENT VARIABLES
+    All the important variables used for these scripts and libraries are located in the Parameter Store of AWS Systems Manager.Remember not to save sensitive information directly in scripts!
 
 &nbsp;
 
