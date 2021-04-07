@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+import sys
+import csv
+import argparse
+from tabulate import tabulate
+
+sys.path.insert(1, '/Users/marshallamey/bin/sysadmintools/lib')
+from Zoom import Zoom
+
+
+## Parse command arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--company', 
+    help='REQUIRED: provide name of the company to update',  
+    metavar=''
+)
+parser.add_argument('-o', '--oldDomain', 
+    help='REQUIRED: old email domain of users',  
+    metavar=''
+)
+parser.add_argument('-n', '--newDomain', 
+    help='REQUIRED: new email domain of users',  
+    metavar=''
+)
+parser.add_argument('-l', '--list', 
+    help='OPTIONAL: csv list of user emails to update. Headers=oldEmail,newEmail',  
+    metavar=''
+)
+args = parser.parse_args()
+
+
+# Validate all arguments
+if not args.company:
+    print('You must include the company name as an argument. Use --help for more information')
+    sys.exit('Invalid arguments')
+if (args.oldDomain and not args.newDomain) or (args.newDomain and not args.oldDomain):
+    print('You must include both the newDomain and oldDomain arguments. Use --help for more information')
+    sys.exit('Invalid arguments')
+if ((not args.oldDomain and not args.newDomain and not args.list) 
+or (args.oldDomain and args.newDomain and args.list)):
+    print('You must include EITHER the list OR both oldDomain and newDomain arguments. Use --help for more information')
+    sys.exit('Invalid arguments')
+
+
+# Create list of users
+ZOOM = Zoom(args.company)
+allUsers = []
+if args.oldDomain and args.newDomain:    
+    for user in ZOOM.getAllUsers(): 
+        if args.oldDomain in user['email']: 
+            allUsers.append([user['email'], f"{user['email'].split('@')[0]}@{args.newDomain}"])
+elif args.list:
+    with open(args.list, newline='') as userList:
+        allUsers = list(csv.reader(userList))
+
+
+# CONFIRM LIST BEFORE UPDATING!!
+print(tabulate(allUsers, headers=["Old Email", "New Email"]))
+confirmation = input(f'Are you sure you want to update these {len(allUsers)} emails? (y/n): ')
+if confirmation != 'y': sys.exit('That was not a yes. Nothing has changed. Exiting script...')
+
+
+# Update emails in list
+for user in allUsers:
+    print(f"Updating {user[0]} to {user[1]}") 
+
+    try: 
+        ZOOM.updateUserEmail(user[0], user[1])
+        print(f'Successfully updated {user[1]}')
+    except: 
+        print(f"{user[0]} had an issue updating. Please check for errors.")

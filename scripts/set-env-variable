@@ -38,6 +38,6 @@ if not args.name or not args.value or not args.desc:
     quit()
 
 AWS = A()
-res = AWS.setEnvVariable(args.name, args.value, args.desc, args.type, args.overwrite)
+res = AWS.setEnvVariable(args.name, args.value, args.desc, args.type, args.overwrite == 'True')
 
 print(res)
