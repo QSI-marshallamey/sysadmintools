@@ -79,7 +79,6 @@ class Slack:
         # Make GET request
         response = requests.get(url = URL, headers = self.HEADERS)
         res = response.json()
-
         # Print result
         if res['ok'] == True:
             for user in res['members']:
@@ -93,7 +92,7 @@ class Slack:
             return False
 
 
-    def updateUserEmail(self, oldEmail, newEmail):
+    def updateUserEmail(self, oldEmail, newEmail, userID):
         '''
         Updates email address of Slack user
         '''
@@ -103,22 +102,21 @@ class Slack:
         HEADERS = {
             'Authorization': 'Bearer ' + self.API_TOKEN,
             'Content-type': 'application/json; charset=utf-8',
-            'X-Slack-User': oldEmail,
         }
         DATA = {
+            "user": userID,
             "profile": { "email": newEmail }
         }
         
         # Make POST request
         response = requests.post(url=URL, headers=HEADERS, json=DATA)
         res = response.json()
-
         # Print result
         if res['ok'] == True:
             print(f"Successfully updated {oldEmail} to {newEmail}")
             self.log.write(f'updateSlackEmail ==> {res}\n')
             return res
         else: 
-            print(f"{oldEmail} not updated")
+            print(f"{oldEmail} not updated. {res}")
             self.log.write(f"updateSlackEmail ==> {res}\n")
             return res

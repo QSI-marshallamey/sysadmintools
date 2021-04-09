@@ -58,12 +58,12 @@ class Zoom:
     def updateUserEmail(self, oldEmail, newEmail):
         response = requests.put(
             f'https://api.zoom.us/v2/users/{oldEmail}/email', 
-            data={'email': newEmail}, 
+            json={"email": newEmail}, 
             headers=self.HEADERS
-        ).json()
-        if response['status_code'] == 204: print(f'Successfully updated {oldEmail} to {newEmail}')
-        elif response['status_code'] == 404: print(f'Successfully updated {oldEmail} to {newEmail}')
-        else: print(f"Received {response['status_code']} status code. \n {response}")
+        )
+        if response.status_code == 204: print(f'Successfully updated {oldEmail} to {newEmail}')
+        elif response.status_code == 404: print(response.json()['message'])
+        else: print(f"Received {response.status_code} for {oldEmail}. Go to https://marketplace.zoom.us/docs/api-reference/error-definitions for more information")
         return response
 
 

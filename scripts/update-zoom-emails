@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import csv
+from time import sleep
 import argparse
 from tabulate import tabulate
 
@@ -63,9 +64,8 @@ if confirmation != 'y': sys.exit('That was not a yes. Nothing has changed. Exiti
 # Update emails in list
 for user in allUsers:
     print(f"Updating {user[0]} to {user[1]}") 
-
     try: 
         ZOOM.updateUserEmail(user[0], user[1])
-        print(f'Successfully updated {user[1]}')
-    except: 
-        print(f"{user[0]} had an issue updating. Please check for errors.")
+        sleep(1)
+    except Exception as err: 
+        print(f"{user[0]} had an issue updating. Please check for errors. {err}")

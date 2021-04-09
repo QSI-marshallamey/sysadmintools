@@ -48,24 +48,21 @@ allUsers = []
 if args.oldDomain and args.newDomain:    
     for user in SLACK.getAllUsers(): 
         if 'email' in user['profile'] and args.oldDomain in user['profile']['email']: 
-            allUsers.append([user['profile']['email'], f"{user['profile']['email'].split('@')[0]}@{args.newDomain}"])
+            allUsers.append([user['profile']['email'], f"{user['profile']['email'].split('@')[0]}@{args.newDomain}", user['id']])
 elif args.list:
     with open(args.list, newline='') as userList:
         allUsers = list(csv.reader(userList))
 
 
 # CONFIRM LIST BEFORE UPDATING!!
-print(tabulate(allUsers, headers=["Old Email", "New Email"]))
+print(tabulate(allUsers, headers=["Old Email", "New Email", "ID"]))
 confirmation = input(f'Are you sure you want to update these {len(allUsers)} emails? (y/n): ')
 if confirmation != 'y': sys.exit('That was not a yes. Nothing has changed. Exiting script...')
 
 
 # Update emails in list
 for user in allUsers:
-    print(f"Updating {user[0]} to {user[1]}") 
-
     try: 
-        SLACK.updateUserEmail(user[0], user[1])
-        print(f'Successfully updated {user[1]}')
+        SLACK.updateUserEmail(user[0], user[1], user[2])
     except: 
         print(f"{user[0]} had an issue updating. Please check for errors.")
