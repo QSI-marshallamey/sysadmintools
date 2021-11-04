@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+import sys
+import csv
+import json
+from time import sleep
+import argparse
+import asyncio
+from tabulate import tabulate
+from pprint import pprint
+import requests
+sys.path.insert(1, '/Users/marshallamey/bin/sysadmintools/lib')
+from Zoom import Zoom
+from Okta import Okta
+
+## Parse command arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--company', 
+    help='REQUIRED: provide name of the company to update',  
+    metavar=''
+)
+parser.add_argument('-l', '--list', 
+    help='OPTIONAL: csv list of users exported from Zoom.',  
+    metavar=''
+)
+args = parser.parse_args()
+
+
+# Validate all arguments
+if not args.company:
+    print('You must include the company name as an argument. Use --help for more information')
+    sys.exit('Invalid arguments')
+if (not args.list):
+    print('You must include the list of Zoom users. Use --help for more information')
+    sys.exit('Invalid arguments')
+
+async def main():
+    # Create list of users
+    ZOOM = Zoom(args.company)
+    allUsers = []   
+    with open(args.list, newline='') as file:
+        userList = csv.reader(file)
+        for user in userList:
+            allUsers.append({'email': user[0], 'license': user[12]})
+    pprint(allUsers)
+
+    # CONFIRM LIST BEFORE UPDATING!!
+    # print(tabulate(allUsers, headers=["Email", "License Type"]))
+    confirmation = input(f'Are you sure you want to update these users? (y/n): ')
+    if confirmation != 'y': sys.exit('That was not a yes. Nothing has changed. Exiting script...')
+
+    headers = { 
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "SSWS 00gH4OqlJjbKmIGRbtqqJkrlGTyzOG4utYhXTVOQ98" }
+
+    OKTA = Okta(args.company)
+    for user in allUsers:
+        profile = {
+            'profile': {
+                'zoomLicense': user['license'],
+                'login': user['email'],
+                'email': user['email']
+            }
+        }
+        
+        ### UPDATE CURRENT USER IN OKTA
+        currentUser = await OKTA.getUser(user['email'])
+        if currentUser:
+            updatedUser = requests.post(
+                f'https://{args.company}.okta.com/api/v1/users/{currentUser.id}', 
+                data=json.dumps(profile), 
+                headers=headers
+            )
+            if updatedUser: print(f'Successfully updated {updatedUser.json()["profile"]["login"]}\n')
+            else: print(f'{user["email"]} not updated in Okta. Check logs.')
+        else: print(f'Did not retrieve {user["email"]} from Okta.')  
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())

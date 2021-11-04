@@ -1,0 +1,219 @@
+#!/usr/bin/env python3
+import os
+import sys
+import logging
+import asyncio
+import argparse
+import requests
+from pathlib import Path
+from pprint import pprint
+from datetime import datetime
+from openpyxl import load_workbook
+from openpyxl.worksheet import worksheet
+
+### The path to libraries need to be included
+sys.path.insert(1, '/Users/marshallamey/bin/sysadmintools/lib')
+from Okta import Okta
+from AWS import AWS
+
+### Parse command arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--company', 
+    help='provide name of one of the following companies: 4catalyzer, detect, tesseract, aithera, proteinevo',  
+    metavar='' )
+args = parser.parse_args()
+if not args.company:
+    print('You must include the company name as an argument. Use --help for more information')
+    quit()
+
+### Create a log of this event
+logging.basicConfig(
+    filename=f'../log/{datetime.now().strftime("%Y-%m-%d-%H:%M:%S")}-{args.company}-okta.log', 
+    filemode='w', 
+    format='%(message)s',
+    level=logging.INFO
+)
+
+async def main():
+    OKTA = Okta(args.company)
+    OKTA.user.profile = {}
+    allUsers = []
+    allEmployees = {}
+
+    ### CALL INSPERITY APIs
+    A = AWS()
+    API_KEY = A.getEnvVariable('/insperity/apiKey')
+    ORG_IDS = {
+        '4catalyzer': '4337300',
+        'detect': '4590900',
+        'tesseract': '4591000',
+        'aithera': '4337600',
+        'proteinevo': '5068600'
+    }
+    HEADERS = {'Authorization': f'APIKey {API_KEY}'}
+    COMMUNICATION_URL = f'https://api.insperity.com/public/company/{ORG_IDS[args.company.lower()]}/employeescommunication/v1'
+    COMPANY_URL = f'https://api.insperity.com/public/company/{ORG_IDS[args.company.lower()]}/employeescompany/v1'
+    POSITION_URL = f'https://api.insperity.com/public/company/{ORG_IDS[args.company.lower()]}/employeesposition/v1'
+
+    print('Retrieving users from Insperity...')
+    response = requests.get(url=COMMUNICATION_URL, headers=HEADERS)
+    logging.debug(response.text)
+    response = response.json() 
+    for employee in response['employees']:
+        if employee['employmentStatus'] == 'HIRED': 
+            allEmployees[employee['personId']] = employee
+
+    response = requests.get(url=COMPANY_URL, headers=HEADERS).json()  
+    for employee in response['employees']:
+        if employee['personId'] in allEmployees: 
+            allEmployees[employee['personId']]['company'] = employee['company']
+
+    response = requests.get(url=POSITION_URL, headers=HEADERS).json()  
+    for employee in response['employees']:
+        if employee['personId'] in allEmployees: 
+            allEmployees[employee['personId']]['position'] = employee['position']
+
+    logging.debug(allEmployees)
+
+    for employee in allEmployees:
+        user = allEmployees[employee]
+        
+        #First, make sure the user has an email address (!! a requirement for Okta!!)
+        if user['communication']['workEmail']:
+            manager = {'communication': {'workEmail': None}}
+            if user['position']['supervisorId'] in allEmployees: manager = allEmployees[user['position']['supervisorId']]
+
+            ### CREATE USER PROFILE OBJECT FOR OKTA
+            OKTA.user.profile['employeeNumber'] = user['personId']
+            OKTA.user.profile['firstName']      = user['preferredName'].title() if user['preferredName'] else user['givenName'].title()
+            OKTA.user.profile['lastName']       = user['familyName'].title()
+            OKTA.user.profile['displayName']    = OKTA.user.profile["firstName"]+" "+OKTA.user.profile["lastName"]
+            OKTA.user.profile['login']          = user['communication']['workEmail']
+            OKTA.user.profile['email']          = user['communication']['workEmail']
+            OKTA.user.profile['city']           = user['communication']['homeAddress']['city'].title()
+            OKTA.user.profile['state']          = user['communication']['homeAddress']['state']
+            OKTA.user.profile['title']          = user['position']['jobTitle'].title()
+            OKTA.user.profile['department']     = user['position']['department'].title()
+            OKTA.user.profile['manager']        = manager['communication']['workEmail'] or user['position']['supervisor'].title()
+            OKTA.user.profile['managerId']      = user['position']['supervisorId'] or None  
+            OKTA.user.profile['organization']   = user['company']['name'].title()
+            # OKTA.user.profile['startDate']      = user['employment']['clientOriginalHireDate'].strftime("%Y-%m-%d")
+            
+        
+            ### CONFIRM USER READY TO UPDATE (UNCOMMENT SECTION TO GO ONE BY ONE)
+            # logging.info('User ready to update')
+            
+            # pprint(OKTA.user.profile)
+            # startUpdate = input('Press ENTER to update this user. Type S to Skip. ANY other key to Quit: ')     
+            # if not startUpdate: pass 
+            # elif startUpdate.lower() == 's':
+            #     logging.info(f"Skipped {OKTA.user.profile['email']}...")
+            #     print(f"Skipping {OKTA.user.profile['email']}...")
+            #     continue
+            # else: 
+            #     logging.info(f"Quit Program")
+            #     print('Quitting...')
+            #     quit()
+    
+            ### UPDATE USER DATA IN OKTA
+            print(f"Updating {OKTA.user.profile['email']}...")
+            logging.info(f"Updating {OKTA.user.profile['email']}...")
+
+            currentUser = await OKTA.getUser(OKTA.user.profile['email'])
+            if currentUser: 
+                logging.info(f"New profile data:\n{OKTA.user.profile}")
+                logging.info(f"Old profile in Okta:\n{currentUser.profile}")
+                updatedUser = await OKTA.updateUser(currentUser.id, OKTA.user)
+                if updatedUser: 
+                    print(f'Successfully updated {updatedUser.profile.display_name} ({updatedUser.profile.login})\n')
+                    logging.info(f'Successfully updated {updatedUser.profile.display_name} ({updatedUser.profile.login})\n')
+                else: 
+                    print('User not updated in Okta. Check logs.')
+                    logging.error(f'User not updated in Okta. {currentUser}')
+            else: 
+                logging.info(f"Did not find user in Okta: {OKTA.user.profile['email']}")
+                print('Did not retrieve current user from Okta.')  
+
+    logging.info(f'Done with {len(allEmployees)} total employees')
+    print(f'Done with {len(allEmployees)} total employees')
+
+    
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+
+
+### OPEN INSPERITY EXCEL FILE  
+    # file = ""
+    # for f in Path('.').glob('Detect Headcount*.xlsx'): file = f
+    # if file: print('Excel file found: ' + str(file))
+    # else: 
+    #     print('No excel file in working directory! Quitting')
+    #     quit()
+    # workbook = load_workbook(file)
+    # worksheet = workbook.active 
+
+    # ### GET HEADERS
+    # print('Getting headers...\n')
+    # headerRow = worksheet[7]  ##!! WARNING: Row number 7 could change.
+    # headers = {}
+    # for i, header in enumerate(headerRow): headers[header.value] = i
+    # pprint(headers)
+
+    # ### GET USER INFO FROM ROWS
+    # print('\nImporting Users...')
+    # for row in worksheet.iter_rows(min_row=8, max_col=12, values_only=True): ##!! WARNING: Min row number 8 could change.
+    #     if not row[headers["Work Email"]] and not row[headers["First Name"]]: break
+        
+    #     allUsers.append({
+    #         "Work Email": row[headers["Work Email"]],
+    #         "First Name": row[headers["First Name"]].title(),
+    #         "Nickname": row[headers["Nickname"]].title() if row[headers["Nickname"]] else None,
+    #         "Last Name": row[headers["Last Name"]].title(),
+    #         "Job Title": row[headers["Job Title"]].title(),
+    #         "Department Name": row[headers["Department Name"]].title(),
+    #         "Employee ID": row[headers["Employee ID"]],
+    #         "Worksite State": row[headers["Worksite State"]],
+    #         "Worksite City": row[headers["Worksite City"]].title(),
+    #         "Client Hire Date": row[headers["Client Hire Date"]].strftime("%Y-%m-%d"),
+    #         "Manager First Name": row[headers["Supervisor First Name"]].title(),
+    #         "Manager Last Name": row[headers["Supervisor Last Name"]].title(),
+    #     })
+    # print(f'Imported {len(allUsers)} users.\n')
+    # log.write(f'Imported {len(allUsers)} users.\n')
+
+    ### UPDATE EACH USER
+    # startUpdate = input('Type yes to begin updating. You can check log file for errors ../okta.log')
+    # if startUpdate.lower() != 'yes': quit()
+    # print(f'Updating all users...')
+    # for user in allUsers:
+    #     if user["Work Email"] == 'tspencer-wiley@detect.com': user["Work Email"] = 'tswiley@detect.com' ##Incorrect in Insperity
+
+    #     ### FIND USER MANAGER IN ALLUSERS
+    #     manager = next((mgr for mgr in allUsers if mgr["First Name"] == user["Manager First Name"] and mgr["Last Name"] == user["Manager Last Name"]), None)
+        
+    #     ### CREATE OKTA USER PROFILE OBJECT
+    #     OKTA.user.profile["login"] = user["Work Email"]
+    #     OKTA.user.profile["firstName"] = user["Nickname"] or user["First Name"]
+    #     OKTA.user.profile["lastName"] = user["Last Name"]
+    #     OKTA.user.profile["displayName"] = OKTA.user.profile["firstName"] + " " + OKTA.user.profile["lastName"]
+    #     OKTA.user.profile["email"] = user["Work Email"]
+    #     OKTA.user.profile["title"] = user["Job Title"]
+    #     OKTA.user.profile["department"] = user["Department Name"]
+    #     OKTA.user.profile["employeeNumber"] = user["Employee ID"]
+    #     OKTA.user.profile["city"] = user["Worksite City"]
+    #     OKTA.user.profile["state"] = user["Worksite State"]
+    #     OKTA.user.profile["startDate"] = user["Client Hire Date"]
+    #     if manager:
+    #         OKTA.user.profile["manager"] = manager["Work Email"]
+    #         OKTA.user.profile["managerId"] = manager["Employee ID"]
+    #     else:
+    #         OKTA.user.profile["manager"] = None
+    #         OKTA.user.profile["managerId"] = None
+    #     pprint(OKTA.user.profile)
+
+    #     ### GET USER OKTA ID FOR UPDATE
+    #     currentUser = await OKTA.getUser(user["Work Email"])
+    #     if currentUser: # update user Okta profile
+    #         OKTA.user.id = currentUser.id
+    #         updatedUser = await OKTA.updateUser(OKTA.user.id, OKTA.user)
+    #         if updatedUser: print(f'Successfully updated {updatedUser.profile.display_name}\t{updatedUser.profile.login}\t{updatedUser.id}\n')

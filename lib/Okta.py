@@ -1,5 +1,6 @@
 import asyncio
 from okta.client import Client as OktaClient
+from okta.models import User
 from AWS import AWS
 
 class Okta:
@@ -24,16 +25,28 @@ class Okta:
             'token': API_TOKEN
         }
         self.client = OktaClient(config)
+        self.user = User()
 
     # def addUser(self):
-    # def getUser(self):
+
+    async def getUser(self, login):
+        user, resp, err = await self.client.get_user(login)
+        if err: print("ERROR! User not found in Okta! ==> " + err.message)
+        else: return user
+
     async def getUsers(self):
         users, resp, err = await self.client.list_users()
-        for user in users:
-            print(user.profile.first_name, user.profile.last_name)
-        print(f'Successfully connected!! {len(users)} Okta users found in this domain')
+        if err: print("ERROR! ==> " + str(err))
+        else:
+            for user in users:
+                print(user.profile.first_name, user.profile.last_name)
+            print(f'Success! {len(users)} Okta users retrieved in this domain')
+            return users
 
-    # def updateUser(self):
+    async def updateUser(self, userID, userProfile):
+        updatedUser, res, err = await self.client.partial_update_user(userID, userProfile)
+        if err: print("ERROR! ==> " + str(err))
+        else: return updatedUser
     # def suspendUser(self):
     # def activateUser(self):
     # def unsuspendUser(self):

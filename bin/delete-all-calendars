@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+import os
+import csv
+
+with open('users.csv', 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        print(f'Deleting all calendar events for {row[0]}')
+        if row[0] != 'primaryEmail': 
+            os.system(f'/opt/gam/detect/gam calendar {row[0]} wipe')
+#

@@ -33,7 +33,7 @@ class Zoom:
         # Save keys in file keys object
         #For every user, format data and add to user list
         self.domain = domain
-        self.log = open('../log/zoom.log', 'w+')
+        self.log = open(os.path.dirname(__file__) + '/../log/zoom.log', 'w+')
         self.API_TOKEN = AWS().getEnvVariable('/'+ domain +'/zoom/apiToken')
         self.API_SECRET = AWS().getEnvVariable('/'+ domain +'/zoom/apiSecret')
         self.PAYLOAD = {"iss": self.API_TOKEN, "exp": int(time.time() + 60)}
