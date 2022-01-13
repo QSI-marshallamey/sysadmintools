@@ -76,19 +76,26 @@ async def main():
 
     for employee in allEmployees:
         user = allEmployees[employee]
-        
+        exceptions = {
+            'psoler@tesseracthealth.com': {'firstName': 'Pablo', 'lastName': 'Soler'},
+            'vdemas@tesseracthealth.com': {'firstName': 'Vicky', 'lastName': 'Demas'},
+            'vparillo@tesseracthealth.com': {'firstName': 'Vin', 'lastName': 'Parillo'},
+            'cmcnulty@tesseracthealth.com': {'firstName': 'Chris', 'lastName': 'McNulty'},
+        }
+
         #First, make sure the user has an email address (!! a requirement for Okta!!)
         if user['communication']['workEmail']:
+            email = user['communication']['workEmail']
             manager = {'communication': {'workEmail': None}}
             if user['position']['supervisorId'] in allEmployees: manager = allEmployees[user['position']['supervisorId']]
 
             ### CREATE USER PROFILE OBJECT FOR OKTA
             OKTA.user.profile['employeeNumber'] = user['personId']
-            OKTA.user.profile['firstName']      = user['preferredName'].title() if user['preferredName'] else user['givenName'].title()
-            OKTA.user.profile['lastName']       = user['familyName'].title()
+            OKTA.user.profile['firstName']      = exceptions[email]['firstName'] if email in exceptions else user['preferredName'].title() if user['preferredName'] else user['givenName'].title()
+            OKTA.user.profile['lastName']       = exceptions[email]['lastName'] if email in exceptions else user['familyName'].title()
             OKTA.user.profile['displayName']    = OKTA.user.profile["firstName"]+" "+OKTA.user.profile["lastName"]
-            OKTA.user.profile['login']          = user['communication']['workEmail']
-            OKTA.user.profile['email']          = user['communication']['workEmail']
+            OKTA.user.profile['login']          = email
+            OKTA.user.profile['email']          = email
             OKTA.user.profile['city']           = user['communication']['homeAddress']['city'].title()
             #OKTA.user.profile['city']           = ""
             OKTA.user.profile['state']          = user['communication']['homeAddress']['state']

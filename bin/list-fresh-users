@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import os
+import sys
+import logging
+import asyncio
+import argparse
+import requests
+from datetime import datetime
+
+### Parse command arguments
+# parser = argparse.ArgumentParser()
+# parser.add_argument('-c', '--company', 
+#     help='provide name of one of the following companies: 4catalyzer, detect, tesseract, aithera, proteinevo',  
+#     metavar='' )
+# args = parser.parse_args()
+# if not args.company:
+#     print('You must include the company name as an argument. Use --help for more information')
+#     quit()
+
+### Create a log of this event
+# logging.basicConfig(
+#     filename=f'/opt/sysadmintools/log/freshservice-{datetime.now().strftime("%Y-%m-%d-%H:%M:%S")}-{args.company}.log', 
+#     filemode='w', 
+#     format='%(message)s',
+#     level=logging.INFO
+# )
+requesterSet = set()
+page_num = 1
+
+while True:
+  response = requests.get(url=f"https://4catalyzer.freshservice.com/api/v2/requesters?per_page=100&page={page_num}", auth=('CIjFxd8dD2cT5Ko9ZU0', 'X'))
+  res = response.json() 
+  for user in res['requesters']: 
+    if user['active']: requesterSet.add((user['id'], user['primary_email'])) 
+  if 'next' not in response.links: break
+  page_num += 1
+
+print(requesterSet)
+print(len(requesterSet))
+
+# for user in requesterSet: 
+#   if '4catalyzer.com' not in user[1] and 'detect.com' not in user[1] and 'ai-thera.com' not in user[1] and 'tesseracthealth.com' not in user[1] and 'pei.bio' not in user[1]: 
+#     print(user[1])
+#     requests.delete(url=f"https://4catalyzer.freshservice.com/api/v2/requesters/{user[0]}", auth=('CIjFxd8dD2cT5Ko9ZU0', 'X'))
+
+#requests.delete(url=f"https://4catalyzer.freshservice.com/api/v2/requesters/17001825257", auth=('CIjFxd8dD2cT5Ko9ZU0', 'X'))

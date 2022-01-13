@@ -28,7 +28,7 @@ if not args.company:
 
 ### Create a log of this event
 logging.basicConfig(
-    filename=f'../log/{datetime.now().strftime("%Y-%m-%d-%H:%M:%S")}-{args.company}-okta.log', 
+    filename=f'../log/{datetime.now().strftime("%Y-%m-%d-%H:%M:%S")}-{args.company}-insperity.log', 
     filemode='w', 
     format='%(message)s',
     level=logging.INFO
@@ -77,19 +77,25 @@ async def main():
 
     for employee in allEmployees:
         user = allEmployees[employee]
-        
+        exceptions = {
+            'psoler@tesseracthealth.com': {'firstName': 'Pablo', 'lastName': 'Soler'},
+            'vdemas@tesseracthealth.com': {'firstName': 'Vicky', 'lastName': 'Demas'},
+            'vparillo@tesseracthealth.com': {'firstName': 'Vin', 'lastName': 'Parillo'},
+            'cmcnulty@tesseracthealth.com': {'firstName': 'Chris', 'lastName': 'McNulty'},
+        }
         #First, make sure the user has an email address (!! a requirement for Okta!!)
         if user['communication']['workEmail']:
+            email = user['communication']['workEmail']
             manager = {'communication': {'workEmail': None}}
             if user['position']['supervisorId'] in allEmployees: manager = allEmployees[user['position']['supervisorId']]
 
             ### CREATE USER PROFILE OBJECT FOR OKTA
             OKTA.user.profile['employeeNumber'] = user['personId']
-            OKTA.user.profile['firstName']      = user['preferredName'].title() if user['preferredName'] else user['givenName'].title()
-            OKTA.user.profile['lastName']       = user['familyName'].title()
+            OKTA.user.profile['firstName']      = exceptions[email]['firstName'] if email in exceptions else user['givenName'].title()
+            OKTA.user.profile['lastName']       = exceptions[email]['lastName'] if email in exceptions else user['familyName'].title()
             OKTA.user.profile['displayName']    = OKTA.user.profile["firstName"]+" "+OKTA.user.profile["lastName"]
-            OKTA.user.profile['login']          = user['communication']['workEmail']
-            OKTA.user.profile['email']          = user['communication']['workEmail']
+            OKTA.user.profile['login']          = email
+            OKTA.user.profile['email']          = email
             OKTA.user.profile['city']           = user['communication']['homeAddress']['city'].title()
             OKTA.user.profile['state']          = user['communication']['homeAddress']['state']
             OKTA.user.profile['title']          = user['position']['jobTitle'].title()
@@ -100,41 +106,12 @@ async def main():
             # OKTA.user.profile['startDate']      = user['employment']['clientOriginalHireDate'].strftime("%Y-%m-%d")
             
         
-            ### CONFIRM USER READY TO UPDATE (UNCOMMENT SECTION TO GO ONE BY ONE)
-            # logging.info('User ready to update')
+            ## CONFIRM USER READY TO UPDATE (UNCOMMENT SECTION TO GO ONE BY ONE)
+            logging.info(f"{OKTA.user.profile['email']}\t\t{OKTA.user.profile['firstName']} {OKTA.user.profile['lastName']}\t\t{OKTA.user.profile['title']}")
+            pprint(OKTA.user.profile)
             
-            # pprint(OKTA.user.profile)
-            # startUpdate = input('Press ENTER to update this user. Type S to Skip. ANY other key to Quit: ')     
-            # if not startUpdate: pass 
-            # elif startUpdate.lower() == 's':
-            #     logging.info(f"Skipped {OKTA.user.profile['email']}...")
-            #     print(f"Skipping {OKTA.user.profile['email']}...")
-            #     continue
-            # else: 
-            #     logging.info(f"Quit Program")
-            #     print('Quitting...')
-            #     quit()
-    
-            ### UPDATE USER DATA IN OKTA
-            print(f"Updating {OKTA.user.profile['email']}...")
-            logging.info(f"Updating {OKTA.user.profile['email']}...")
 
-            currentUser = await OKTA.getUser(OKTA.user.profile['email'])
-            if currentUser: 
-                logging.info(f"New profile data:\n{OKTA.user.profile}")
-                logging.info(f"Old profile in Okta:\n{currentUser.profile}")
-                updatedUser = await OKTA.updateUser(currentUser.id, OKTA.user)
-                if updatedUser: 
-                    print(f'Successfully updated {updatedUser.profile.display_name} ({updatedUser.profile.login})\n')
-                    logging.info(f'Successfully updated {updatedUser.profile.display_name} ({updatedUser.profile.login})\n')
-                else: 
-                    print('User not updated in Okta. Check logs.')
-                    logging.error(f'User not updated in Okta. {currentUser}')
-            else: 
-                logging.info(f"Did not find user in Okta: {OKTA.user.profile['email']}")
-                print('Did not retrieve current user from Okta.')  
-
-    logging.info(f'Done with {len(allEmployees)} total employees')
+    logging.info(f'\nDone with {len(allEmployees)} total employees')
     print(f'Done with {len(allEmployees)} total employees')
 
     
