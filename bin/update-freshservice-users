@@ -3,7 +3,7 @@
 # Checks Okta for all deactivated users.  Deactivates corresponding user in Freshservice
 # Checks for emails that do not belong to one of the 4C companies. Deactivates those users
 
-HOME_DIR = '/opt/sysadmintools'
+HOME_DIR = '/Users/marshallamey/bin/sysAdminTools'
 FRESHSERVICE_URL = 'https://4catalyzer.freshservice.com'
 FRESHSERVICE_API_KEY = 'CIjFxd8dD2cT5Ko9ZU0'
 COMPANIES = ['4catalyzer', 'detect', 'tesseract', 'aithera', 'proteinevo']
@@ -52,14 +52,17 @@ async def main():
 
   ##  Deactivate deactivated Okta users
   for user in allDeactivatedUsers: 
-    logging.info(f'Deactivating {user}...'); print(f'Deactivating {user}...')
-    userID = [requester for requester in allRequesters if user in requester ]
-    requests.delete(url=f"{FRESHSERVICE_URL}/api/v2/requesters/{userID}", auth=(FRESHSERVICE_API_KEY, 'X'))
+    userID = [requester[0] for requester in allRequesters if user in requester]
+    if userID:
+      logging.info(f'Deactivating {user}...'); print(f'Deactivating {user}...')
+      requests.delete(url=f"{FRESHSERVICE_URL}/api/v2/requesters/{userID[0]}", auth=(FRESHSERVICE_API_KEY, 'X'))
+
 
   ##  Deactivate FreshService users who aren't with one of the companies
   for user in allRequesters: 
     if not any(domain in user[1] for domain in DOMAINS): 
       logging.info(f'Deactivating {user[1]}...'); print(f'Deactivating {user[1]}...')
+      requests.delete(url=f"{FRESHSERVICE_URL}/api/v2/requesters/{user[0]}", auth=(FRESHSERVICE_API_KEY, 'X'))
 
 
 loop = asyncio.get_event_loop()
