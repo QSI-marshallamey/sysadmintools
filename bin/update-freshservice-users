@@ -3,7 +3,7 @@
 # Checks Okta for all deactivated users.  Deactivates corresponding user in Freshservice
 # Checks for emails that do not belong to one of the 4C companies. Deactivates those users
 
-HOME_DIR = '/Users/marshallamey/bin/sysAdminTools'
+HOME_DIR = '/opt/sysadmintools'
 FRESHSERVICE_URL = 'https://4catalyzer.freshservice.com'
 FRESHSERVICE_API_KEY = 'CIjFxd8dD2cT5Ko9ZU0'
 COMPANIES = ['4catalyzer', 'detect', 'tesseract', 'aithera', 'proteinevo']
