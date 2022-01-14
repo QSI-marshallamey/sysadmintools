@@ -34,7 +34,7 @@ async def main():
     deactivatedUsers = await OKTA.getUsers(deactivated)
     for user in deactivatedUsers: allDeactivatedUsers.append(user.profile.email)
   logging.info(f'\n{len(allDeactivatedUsers)} deactivated users in all Okta companies')
-  logging.info(pprint(allDeactivatedUsers))
+  logging.info(allDeactivatedUsers)
   
   ## Get all requesters from Freshservice
   allRequesters = set()
@@ -47,7 +47,7 @@ async def main():
     if 'next' not in response.links: break
     page_num += 1
   logging.info(f'\n{len(allRequesters)} users in FreshService')
-  logging.info(pprint(allRequesters))
+  logging.info(allRequesters + '\n')
 
   ##  Deactivate deactivated Okta users
   for user in allDeactivatedUsers: 
