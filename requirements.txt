@@ -1,6 +1,7 @@
 openpyxl
 twilio
 imapclient
-pyzmail
 requests
 selenium
+okta
+boto3
