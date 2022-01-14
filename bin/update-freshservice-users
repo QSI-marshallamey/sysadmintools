@@ -47,7 +47,7 @@ async def main():
     if 'next' not in response.links: break
     page_num += 1
   logging.info(f'\n{len(allRequesters)} users in FreshService')
-  logging.info(allRequesters + '\n')
+  logging.info(f'{allRequesters}\n')
 
   ##  Deactivate deactivated Okta users
   for user in allDeactivatedUsers: 
