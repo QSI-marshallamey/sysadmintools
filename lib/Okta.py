@@ -34,8 +34,8 @@ class Okta:
         if err: print("ERROR! User not found in Okta! ==> " + err.message)
         else: return user
 
-    async def getUsers(self):
-        users, resp, err = await self.client.list_users()
+    async def getUsers(self, params={}):
+        users, resp, err = await self.client.list_users(params)
         if err: print("ERROR! ==> " + str(err))
         else:
             for user in users:
