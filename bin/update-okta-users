@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import os
-import sys
+HOME_DIR = '/Users/marshallamey/bin/sysAdminTools'
+import sys; sys.path.insert(1, f'{HOME_DIR}/lib')
 import logging
 import asyncio
 import argparse
@@ -12,49 +12,58 @@ from openpyxl import load_workbook
 from openpyxl.worksheet import worksheet
 
 ### The path to libraries need to be included
-sys.path.insert(1, '/opt/sysadmintools/lib')
+
 from Okta import Okta
 from AWS import AWS
+
+COMPANIES = ['detect', 'tesseract']
+ORG_IDS = {
+    '4catalyzer': '4337300',
+    'detect': '4590900',
+    'tesseract': '4591000',
+    'aithera': '4337600',
+    'proteinevo': '5068600'
+}
+INSPERITY_API_KEY = AWS().getEnvVariable('/insperity/apiKey')
+
+EXCEPTIONS = {
+    'psoler@tesseracthealth.com': {'firstName': 'Pablo', 'lastName': 'Soler'},
+    'vdemas@tesseracthealth.com': {'firstName': 'Vicky', 'lastName': 'Demas'},
+    'vparillo@tesseracthealth.com': {'firstName': 'Vin', 'lastName': 'Parillo'},
+    'cmcnulty@tesseracthealth.com': {'firstName': 'Chris', 'lastName': 'McNulty'},
+}
 
 ### Parse command arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--company', 
-    help='provide name of one of the following companies: 4catalyzer, detect, tesseract, aithera, proteinevo',  
+    help='provide name of one of the following companies: 4catalyzer, detect, tesseract, aithera, proteinevo, all',  
     metavar='' )
 args = parser.parse_args()
 if not args.company:
     print('You must include the company name as an argument. Use --help for more information')
     quit()
 
-### Create a log of this event
-logging.basicConfig(
-    filename=f'/opt/sysadmintools/log/{datetime.now().strftime("%Y-%m-%d-%H:%M:%S")}-{args.company}-okta.log', 
-    filemode='w', 
-    format='%(message)s',
-    level=logging.INFO
-)
 
-async def main():
-    OKTA = Okta(args.company)
+
+
+async def main(company):
+    OKTA = Okta(company)
     OKTA.user.profile = {}
     allEmployees = {}
 
+    ### Create a log of this event
+    logging.basicConfig(
+        filename=f'{HOME_DIR}/log/{company}-insperity2okta-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log', 
+        filemode='w', 
+        format='%(message)s',
+        level=logging.INFO
+)
     ### CALL INSPERITY APIs
-    A = AWS()
-    API_KEY = A.getEnvVariable('/insperity/apiKey')
-    ORG_IDS = {
-        '4catalyzer': '4337300',
-        'detect': '4590900',
-        'tesseract': '4591000',
-        'aithera': '4337600',
-        'proteinevo': '5068600'
-    }
-    HEADERS = {'Authorization': f'APIKey {API_KEY}'}
-    COMMUNICATION_URL = f'https://api.insperity.com/public/company/{ORG_IDS[args.company.lower()]}/employeescommunication/v1'
-    COMPANY_URL = f'https://api.insperity.com/public/company/{ORG_IDS[args.company.lower()]}/employeescompany/v1'
-    POSITION_URL = f'https://api.insperity.com/public/company/{ORG_IDS[args.company.lower()]}/employeesposition/v1'
-
-    print('Retrieving users from Insperity...')
+    HEADERS = {'Authorization': f'APIKey {INSPERITY_API_KEY}'}
+    COMMUNICATION_URL = f'https://api.insperity.com/public/company/{ORG_IDS[company.lower()]}/employeescommunication/v1'
+    COMPANY_URL = f'https://api.insperity.com/public/company/{ORG_IDS[company.lower()]}/employeescompany/v1'
+    POSITION_URL = f'https://api.insperity.com/public/company/{ORG_IDS[company.lower()]}/employeesposition/v1'
+    print(f'Retrieving users from {company.upper()} Insperity...')
     response = requests.get(url=COMMUNICATION_URL, headers=HEADERS)
     logging.debug(response.text)
     response = response.json() 
@@ -76,13 +85,6 @@ async def main():
 
     for employee in allEmployees:
         user = allEmployees[employee]
-        exceptions = {
-            'psoler@tesseracthealth.com': {'firstName': 'Pablo', 'lastName': 'Soler'},
-            'vdemas@tesseracthealth.com': {'firstName': 'Vicky', 'lastName': 'Demas'},
-            'vparillo@tesseracthealth.com': {'firstName': 'Vin', 'lastName': 'Parillo'},
-            'cmcnulty@tesseracthealth.com': {'firstName': 'Chris', 'lastName': 'McNulty'},
-        }
-
         #First, make sure the user has an email address (!! a requirement for Okta!!)
         if user['communication']['workEmail']:
             email = user['communication']['workEmail']
@@ -91,13 +93,12 @@ async def main():
 
             ### CREATE USER PROFILE OBJECT FOR OKTA
             OKTA.user.profile['employeeNumber'] = user['personId']
-            OKTA.user.profile['firstName']      = exceptions[email]['firstName'] if email in exceptions else user['preferredName'].title() if user['preferredName'] else user['givenName'].title()
-            OKTA.user.profile['lastName']       = exceptions[email]['lastName'] if email in exceptions else user['familyName'].title()
+            OKTA.user.profile['firstName']      = EXCEPTIONS[email]['firstName'] if email in EXCEPTIONS else user['preferredName'].title() if user['preferredName'] else user['givenName'].title()
+            OKTA.user.profile['lastName']       = EXCEPTIONS[email]['lastName'] if email in EXCEPTIONS else user['familyName'].title()
             OKTA.user.profile['displayName']    = OKTA.user.profile["firstName"]+" "+OKTA.user.profile["lastName"]
             OKTA.user.profile['login']          = email
             OKTA.user.profile['email']          = email
             OKTA.user.profile['city']           = user['communication']['homeAddress']['city'].title()
-            #OKTA.user.profile['city']           = ""
             OKTA.user.profile['state']          = user['communication']['homeAddress']['state']
             OKTA.user.profile['title']          = user['position']['jobTitle'].title()
             OKTA.user.profile['department']     = user['position']['department'].title()
@@ -145,4 +146,5 @@ async def main():
     print(f'Done with {len(allEmployees)} total employees')
 
 loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+if args.company != 'all': loop.run_until_complete(main(args.company))
+else: [loop.run_until_complete(main(company)) for company in COMPANIES]

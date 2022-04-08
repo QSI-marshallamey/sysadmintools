@@ -39,10 +39,8 @@ class AWS:
         return response
 
     def getEnvVariable(self, name):
-        response = self.ssm.get_parameter(
-            Name=name,
-            WithDecryption=True
-        )
+        try: response = self.ssm.get_parameter(Name=name, WithDecryption=True)
+        except: return False
         return response['Parameter']['Value']
     
     def deleteEnvVariable(self, name):

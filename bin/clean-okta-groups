@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+# This script makes one Okta API to pull a list of deactivated users
+# For each user, one Okta API call is made to pull a list of groups the user belongs to
+# For each group, one Okta API call is made to remove the user from that group
+# REQUIREMENTS: 
+#   1) Two environment variables
+#     - COMPANIES: Comma separated string (no spaces) of all Okta subdomains to be used in script. 
+#     - SYSADMINTOOLS_DIR: Your path to the root directory for sysAdminTools
+#   2) Okta API Credentials.  The Org URL and API token are required.
+#      This script pulls tokens from AWS using the AWS library in the lib directory. Modify accordingly
+
+### DECLARE GLOBAL VARIABLES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os
+SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+COMPANIES = os.getenv('COMPANIES').split(',')
+
+### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
+import logging
+import asyncio
+import argparse
+from pprint import pprint
+from datetime import datetime
+from okta.client import Client as OktaClient
+from AWS import AWS as A
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--company', 
+    help='provide name of the Okta subdomain, i.e. company.okta.com',  
+    metavar='' )
+args = parser.parse_args()
+if not args.company:
+    print('You must include the company Okta subdomain as an argument. Use --help for more information')
+    quit()
+
+### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def theLogger(logger_name, level=logging.INFO):
+  """
+  Method to return a custom logger with the given name and level
+  """
+  logger = logging.getLogger(logger_name)
+  logger.setLevel(level)
+  log_format = logging.Formatter('%(message)s')
+  # Creating and adding the console handler
+  console_handler = logging.StreamHandler(sys.stdout)
+  console_handler.setFormatter(log_format)
+  logger.addHandler(console_handler)
+  # Creating and adding the file handler
+  file_handler = logging.FileHandler(logger_name, mode='w')
+  file_handler.setFormatter(log_format)
+  logger.addHandler(file_handler)
+  return logger
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+async def main(company):
+  #> Declare local variables
+  AWS = A()
+  API_TOKEN = AWS.getEnvVariable(f'/{company}/okta/apiToken')
+  OKTA = OktaClient({ 'orgUrl': f'https://{company}.okta.com', 'token': API_TOKEN })
+
+  #> Create a log of this event
+  logger = theLogger(f'{SYSADMINTOOLS_DIR}/log/{company}-cleanOktaGroups-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+  logger.debug(f'\nCreated log at {SYSADMINTOOLS_DIR}/log/{company}-cleanOktaGroups-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+
+  #> Get list of deactivated users
+  logger.info(f'Getting list of deactivated users at {company}.okta.com')
+  users, res, err = await OKTA.list_users({'filter': 'status eq "DEPROVISIONED"'})
+  if err: logger.error(err)
+  if res: logger.debug(res)
+  logger.info('Found the following deactivated users:')
+  for user in users: logger.info(f'\t{user.profile.email}')
+
+  #> For each user, go through the list of groups, and remove user from each group
+  for user in users: 
+    groups, res, err = await OKTA.list_user_groups(user.id)
+    if len(groups) > 1: logger.info(f'Found the following groups for {user.profile.email}:')
+    else: logger.info(f'Found 0 groups for {user.profile.email}')
+    if err: logger.error(err)
+    if res: logger.debug(res)
+
+    for group in groups: 
+      if group.profile.name != 'Everyone':
+        logger.info(f'Removing {user.profile.email} from {group.profile.name}...')
+        res, err = await OKTA.remove_user_from_group(group.id, user.id)
+        if err: logger.error(err)
+        if res: logger.debug(res)
+
+loop = asyncio.get_event_loop()
+if args.company != 'all': loop.run_until_complete(main(args.company))
+else: [loop.run_until_complete(main(company)) for company in COMPANIES]

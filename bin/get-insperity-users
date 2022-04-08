@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+# This script makes one Okta API to pull a list of all users in Insperity
+# REQUIREMENTS: 
+#   1) Two environment variables
+#     - COMPANIES: Comma separated string (no spaces) of all Okta subdomains to be used in script. 
+#     - SYSADMINTOOLS_DIR: Your path to the root directory for sysAdminTools
+#   2) Okta API Credentials.  The Org URL and API token are required.
+#      This script pulls tokens from AWS using the AWS library in the lib directory. Modify accordingly
+
+### DECLARE GLOBAL VARIABLES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os
+SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+COMPANIES = os.getenv('COMPANIES').split(',')
+
+### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
+import csv
+import asyncio
+import argparse
+import logging
+import requests
+from datetime import datetime
+from AWS import AWS as A
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--company', 
+    help='provide name of the Okta subdomain, i.e. company.okta.com',  
+    metavar='' )
+args = parser.parse_args()
+if not args.company:
+    print('You must include the company Okta subdomain as an argument. Use --help for more information')
+    quit()
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+async def main(company):
+  #> Declare local variables
+    AWS = A()
+    API_KEY = AWS.getEnvVariable('/insperity/apiKey')
+    ORG_IDS = {
+        '4catalyzer': '4337300',
+        'detect': '4590900',
+        'tesseract': '4591000',
+        'aithera': '4337600',
+        'proteinevo': '5068600'
+    }
+    HEADERS = {'Authorization': f'APIKey {API_KEY}'}
+    COMMUNICATION_URL = f'https://api.insperity.com/public/company/{ORG_IDS[company.lower()]}/employeescommunication/v1'
+    COMPANY_URL = f'https://api.insperity.com/public/company/{ORG_IDS[company.lower()]}/employeescompany/v1'
+    POSITION_URL = f'https://api.insperity.com/public/company/{ORG_IDS[company.lower()]}/employeesposition/v1'
+    allEmployees = {}
+
+    print(f'Retrieving {company.title()} users from Insperity...')
+
+    #> Make Insperity API calls, add users to allEmployees with key as employee ID
+    response = requests.get(url=COMMUNICATION_URL, headers=HEADERS).json()
+    for employee in response['employees']:
+        if employee['employmentStatus'] == 'HIRED': 
+            allEmployees[employee['personId']] = employee
+
+    response = requests.get(url=COMPANY_URL, headers=HEADERS).json()  
+    for employee in response['employees']:
+        if employee['personId'] in allEmployees: 
+            allEmployees[employee['personId']]['company'] = employee['company']
+
+    response = requests.get(url=POSITION_URL, headers=HEADERS).json()  
+    for employee in response['employees']:
+        if employee['personId'] in allEmployees: 
+            allEmployees[employee['personId']]['position'] = employee['position']
+
+    #> Write Insperity users to csv file
+    fields = ['organization', 'firstName', 'lastName', 'email', 'manager' ]
+    with open(f'{SYSADMINTOOLS_DIR}/log/{company}-getInsperityUsers-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.csv', 'w') as csvfile:
+      writer = csv.DictWriter(csvfile, fieldnames = fields)
+      writer.writeheader()
+      for employee in allEmployees: 
+        user = allEmployees[employee]
+        writer.writerows([{
+          'organization': user['company']['name'],
+          'firstName': user['givenName'],
+          'lastName': user['familyName'],
+          'email': user['communication']['workEmail'],
+          'manager': user['position']['supervisor']   
+        }])
+        
+    print(f'Done with {len(allEmployees)} total employees\n')
+
+loop = asyncio.get_event_loop()
+if args.company != 'all': loop.run_until_complete(main(args.company))
+else: [loop.run_until_complete(main(company)) for company in COMPANIES]

@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-import sys
-import asyncio
-import argparse
+# This script deletes an env variable from the AWS Parameter Store
+# REQUIREMENTS: 
+#   1) Local environment variable
+#     - SYSADMINTOOLS_DIR: Your path to the root directory for sysAdminTools
+#   2) AWS Credentials.  This script is using aws sso login credentials
 
-# The path to import libraries need to be included
-sys.path.insert(1, '/Users/marshallamey/bin/sysadmintools/lib')
+### DECLARE GLOBAL VARIABLES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os
+SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+
+### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
+import argparse
 from AWS import AWS as A
 
-
-## Parse command arguments
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 parser = argparse.ArgumentParser()
 parser.add_argument('-n', '--name', 
     help='Name of the variable. Required argument.',  
@@ -19,7 +25,11 @@ if not args.name:
     print('You have not entered the name of the variable to delete. Use --help for more information')
     sys.exit()
 
-AWS = A()
-res = AWS.deleteEnvVariable(args.name)
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+    AWS = A()
+    res = AWS.deleteEnvVariable(args.name)
+    print(res)
 
-print(res)
+if __name__ == '__main__':
+    main()
