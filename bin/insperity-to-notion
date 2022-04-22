@@ -3,34 +3,8 @@
 # 3 API calls per company to Insperity to pull relevant information for users
 # 2 API calls to Okta to get and then update the user with latest data
 
-### DECLARE GLOBAL VARIABLES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-import os
-SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
-print(SYSADMINTOOLS_DIR)
-COMPANIES = os.getenv('COMPANIES').split(',')
-ORG_IDS = {
-    '4catalyzer': '91436cd85be64ca199fbabedacfdbe86',
-    'detect': 'a8fd1f2e9da5494f8a1a4421c092226c',
-    'tesseract': 'e0c91e19c9a747e7b497d2535341fc17',
-    'aithera': 'e277a78ff1244e2c81db388bd0341a95',
-    'proteinevo': '06f876d9135b45b18d547cd540c786b0'
-}
-EXCEPTIONS = {
-    'psoler@tesseracthealth.com': {'firstName': 'Pablo', 'lastName': 'Soler'},
-    'vdemas@tesseracthealth.com': {'firstName': 'Vicky', 'lastName': 'Demas'},
-    'vparillo@tesseracthealth.com': {'firstName': 'Vin', 'lastName': 'Parillo'},
-    'cmcnulty@tesseracthealth.com': {'firstName': 'Chris', 'lastName': 'McNulty'},
-}
-
-DB_IDS = {
-    '4catalyzer': '4337300',
-    'detect': 'a8fd1f2e9da5494f8a1a4421c092226c',
-    'tesseract': '4591000',
-    'aithera': '4337600',
-    'proteinevo': '5068600'
-}
-
 ### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
 import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
 import logging
 import asyncio
@@ -39,6 +13,7 @@ import requests
 from datetime import datetime
 from notion_client import Client
 from AWS import AWS
+from env import *
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 parser = argparse.ArgumentParser()
@@ -70,8 +45,10 @@ def theLogger(logger_name, level=logging.INFO):
 
 ### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 async def main(company):
-  NOTION =Client(auth="secret_xPnqQflGU4dJKUQ3zUbGTXOgNyGCYpThjjqzwQ71wSy")
   INSPERITY_API_KEY = AWS().getEnvVariable('/insperity/apiKey')
+  NOTION_API_KEY = AWS().getEnvVariable('/notion/apiKey')
+  NOTION =Client(auth=NOTION_API_KEY)
+  
   DB_ID = ""
   USER = {}
   allEmployees = {}

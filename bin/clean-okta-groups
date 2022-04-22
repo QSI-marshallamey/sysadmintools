@@ -10,9 +10,7 @@
 #      This script pulls tokens from AWS using the AWS library in the lib directory. Modify accordingly
 
 ### DECLARE GLOBAL VARIABLES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-import os
-SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
-COMPANIES = os.getenv('COMPANIES').split(',')
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
 
 ### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
@@ -22,7 +20,8 @@ import argparse
 from pprint import pprint
 from datetime import datetime
 from okta.client import Client as OktaClient
-from AWS import AWS as A
+from AWS import AWS
+from env import*
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 parser = argparse.ArgumentParser()
@@ -55,8 +54,7 @@ def theLogger(logger_name, level=logging.INFO):
 ### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 async def main(company):
   #> Declare local variables
-  AWS = A()
-  API_TOKEN = AWS.getEnvVariable(f'/{company}/okta/apiToken')
+  API_TOKEN = AWS().getEnvVariable(f'/{company}/okta/apiToken')
   OKTA = OktaClient({ 'orgUrl': f'https://{company}.okta.com', 'token': API_TOKEN })
 
   #> Create a log of this event

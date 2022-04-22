@@ -12,7 +12,7 @@ SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
 ### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
 import argparse
-from AWS import AWS as A
+from AWS import AWS
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 parser = argparse.ArgumentParser()
@@ -45,8 +45,7 @@ if not args.name or not args.value or not args.desc:
 
 ### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def main():
-    AWS = A()
-    res = AWS.setEnvVariable(args.name, args.value, args.desc, args.type, args.overwrite)
+    res = AWS().setEnvVariable(args.name, args.value, args.desc, args.type, args.overwrite)
     print(res)
 
 if __name__ == '__main__':

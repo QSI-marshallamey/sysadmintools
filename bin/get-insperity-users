@@ -7,12 +7,8 @@
 #   2) Okta API Credentials.  The Org URL and API token are required.
 #      This script pulls tokens from AWS using the AWS library in the lib directory. Modify accordingly
 
-### DECLARE GLOBAL VARIABLES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-import os
-SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
-COMPANIES = os.getenv('COMPANIES').split(',')
-
 ### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
 import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
 import csv
 import asyncio
@@ -20,7 +16,8 @@ import argparse
 import logging
 import requests
 from datetime import datetime
-from AWS import AWS as A
+from AWS import AWS
+from env import *
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 parser = argparse.ArgumentParser()
@@ -35,8 +32,7 @@ if not args.company:
 ### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 async def main(company):
   #> Declare local variables
-    AWS = A()
-    API_KEY = AWS.getEnvVariable('/insperity/apiKey')
+    API_KEY = AWS().getEnvVariable('/insperity/apiKey')
     ORG_IDS = {
         '4catalyzer': '4337300',
         'detect': '4590900',

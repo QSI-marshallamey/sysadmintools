@@ -1,2 +1,2 @@
 #!/bin/bash
-mongodump --port 29111 --out "~/pCloud\ Drive/Backups/mongodb" 
+mongodump --port 29111 --out "/Volumes/mj/Backups/mongodb" 

@@ -1,0 +1,2 @@
+#!/usr/bin/sh
+cd /opt/4c_devops/ansible && /usr/bin/ansible-playbook playbooks/dns/dns-backup.yml
