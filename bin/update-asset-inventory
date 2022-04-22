@@ -37,7 +37,7 @@ def theLogger(logger_name, level=logging.INFO):
   return logger
 
 ### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-async def main(company):
+async def main():
   NOTION_API_KEY = AWS().getEnvVariable('/notion/insperityKey')
   FRESHSERVICE_API_KEY = AWS().getEnvVariable('/freshservice/apiKey')
   NOTION =Client(auth=NOTION_API_KEY)
@@ -46,8 +46,8 @@ async def main(company):
   ASSETS = []
 
   #> Create a log of this event
-  logger = theLogger(f'{SYSADMINTOOLS_DIR}/log/{company}-assetIsnventory-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
-  logger.debug(f'\nCreated log at {SYSADMINTOOLS_DIR}/log/{company}-assetInventory-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+  logger = theLogger(f'{SYSADMINTOOLS_DIR}/log/assetIsnventory-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+  logger.debug(f'\nCreated log at {SYSADMINTOOLS_DIR}/log/assetInventory-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
 
   ### CALL INSPERITY APIs
   page_num = 1
