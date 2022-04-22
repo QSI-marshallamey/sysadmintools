@@ -16,6 +16,7 @@ from pprint import pprint
 from datetime import datetime
 from notion_client import Client
 from AWS import AWS
+from env import *
 
 ### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def theLogger(logger_name, level=logging.INFO):
@@ -110,4 +111,3 @@ async def main(company):
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
-
