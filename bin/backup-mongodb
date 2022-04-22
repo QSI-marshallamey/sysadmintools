@@ -1,0 +1,2 @@
+#!/bin/bash
+mongodump --port 29111 --out "/Volumes/mj/Backups/mongodb" 

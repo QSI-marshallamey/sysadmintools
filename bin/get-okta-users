@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+# This script makes one Okta API to pull a list of all users
+# REQUIREMENTS: 
+#   1) Two environment variables
+#     - COMPANIES: Comma separated string (no spaces) of all Okta subdomains to be used in script. 
+#     - SYSADMINTOOLS_DIR: Your path to the root directory for sysAdminTools
+#   2) Okta API Credentials.  The Org URL and API token are required.
+#      This script pulls tokens from AWS using the AWS library in the lib directory. Modify accordingly
+
+
+### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
+import csv
+import asyncio
+import argparse
+from datetime import datetime
+from okta.client import Client as OktaClient
+from AWS import AWS
+from env import *
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--company', 
+    help='provide name of the Okta subdomain, i.e. company.okta.com',  
+    metavar='' )
+args = parser.parse_args()
+if not args.company:
+    print('You must include the company Okta subdomain as an argument. Use --help for more information')
+    quit()
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+async def main(company):
+  #> Declare local variables
+  API_TOKEN = AWS().getEnvVariable(f'/{company}/okta/apiToken')
+  OKTA = OktaClient({ 'orgUrl': f'https://{company}.okta.com', 'token': API_TOKEN })
+
+  #> Get Okta users
+  print(f'Retrieving {company.title()} users from Okta...')
+  fields = ['organization', 'firstName', 'lastName', 'email', 'status' ]
+  users, res, err = await OKTA.list_users()
+  if err: print(err)
+  else:
+    with open(f'{SYSADMINTOOLS_DIR}/log/{company}-getOktaUsers-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.csv', 'w') as csvfile:
+      writer = csv.DictWriter(csvfile, fieldnames = fields)
+      writer.writeheader()
+      for user in users: writer.writerows([{
+        'organization': company,
+        'firstName': user.profile.firstName,
+        'lastName': user.profile.lastName,
+        'email': user.profile.email,
+        'status': user.status   
+      }])
+  print(f'Done with {len(users)} total employees\n')
+loop = asyncio.get_event_loop()
+if args.company != 'all': loop.run_until_complete(main(args.company))
+else: [loop.run_until_complete(main(company)) for company in COMPANIES]

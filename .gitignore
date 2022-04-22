@@ -1,4 +1,5 @@
 __pycache__
 ADMIN_KEYS.py
-*.log
-*.DS_Store
+lib/env.py
+log/*
+**.DS_Store

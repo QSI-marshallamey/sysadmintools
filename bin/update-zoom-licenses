@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from contextlib import nullcontext
 import sys
 import csv
 import json
@@ -47,11 +48,11 @@ async def main():
     # print(tabulate(allUsers, headers=["Email", "License Type"]))
     confirmation = input(f'Are you sure you want to update these users? (y/n): ')
     if confirmation != 'y': sys.exit('That was not a yes. Nothing has changed. Exiting script...')
-
+    ZOOM_API_KEY = "null"
     headers = { 
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "Authorization": "SSWS 00gH4OqlJjbKmIGRbtqqJkrlGTyzOG4utYhXTVOQ98" }
+        "Authorization": f"SSWS {ZOOM_API_KEY}" }
 
     OKTA = Okta(args.company)
     for user in allUsers:

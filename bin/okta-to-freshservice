@@ -3,12 +3,8 @@
 # Checks Okta for all deactivated users.  Deactivates corresponding user in Freshservice
 # Checks for emails that do not belong to one of the 4C companies. Deactivates those users
 
-HOME_DIR = '/opt/sysadmintools'
-FRESHSERVICE_URL = 'https://4catalyzer.freshservice.com'
-COMPANIES = ['4catalyzer', 'detect', 'tesseract', 'aithera', 'proteinevo']
-DOMAINS = ['4combinator.com', '4catalyzer.com', 'detect.com', 'tesseracthealth.com', 'ai-thera.com', 'pei.bio']
-
-import sys; sys.path.insert(1, f'{HOME_DIR}/lib')
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
 import logging
 import asyncio
 import requests
@@ -17,13 +13,14 @@ from datetime import datetime
 from time import sleep
 from Okta import Okta
 from AWS import AWS
+from env import *
 
-A = AWS()
-FRESHSERVICE_API_KEY = A.getEnvVariable('/freshservice/apiKey')
+FRESHSERVICE_URL = 'https://4catalyzer.freshservice.com'
+FRESHSERVICE_API_KEY = AWS.getEnvVariable('/freshservice/apiKey')
 
 ## Create a log of this event
 logging.basicConfig(
-    filename=f'{HOME_DIR}/log/freshservice-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log', 
+    filename=f'{SYSADMINTOOLS_DIR}/log/freshservice-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log', 
     filemode='w', 
     format='%(message)s',
   level=logging.INFO

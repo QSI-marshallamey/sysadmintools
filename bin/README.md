@@ -3,6 +3,12 @@
     !! Make sure the scripts are executable !!
 
 &nbsp;
+## SCRIPTS FOR OKTA
+---
+### 1. clean-up-okta-groups
+*Removes all deactivated users from groups*
+#### Required Arguments
+* -c, -company: Subdomain of Okta URL  (Using 'all' with comma-separated list as env variable (COMPANIES) will run as loop)
 
 ## SCRIPTS FOR USING ENVIRONMENT VARIABLES
 ---
@@ -95,3 +101,4 @@ All the important variables used for these scripts and libraries are located in 
 &nbsp;
 
 ### 2. send-text
+
