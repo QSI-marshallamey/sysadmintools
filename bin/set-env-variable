@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-import sys
 import asyncio
 import argparse
 
 # The path to import libraries need to be included
-sys.path.insert(1, '/Users/marshallamey/bin/sysadmintools/lib')
+import os
+SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
 from AWS import AWS as A
 
 
 ## Parse command arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-n', '--name', 
+parser.add_argument('-n', '--name',
     help='Name of the variable. Required argument.',  
     metavar=''
 )

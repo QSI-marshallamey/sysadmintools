@@ -5,7 +5,6 @@
 
 HOME_DIR = '/opt/sysadmintools'
 FRESHSERVICE_URL = 'https://4catalyzer.freshservice.com'
-FRESHSERVICE_API_KEY = 'CIjFxd8dD2cT5Ko9ZU0'
 COMPANIES = ['4catalyzer', 'detect', 'tesseract', 'aithera', 'proteinevo']
 DOMAINS = ['4combinator.com', '4catalyzer.com', 'detect.com', 'tesseracthealth.com', 'ai-thera.com', 'pei.bio']
 
@@ -17,6 +16,10 @@ from pprint import pprint
 from datetime import datetime
 from time import sleep
 from Okta import Okta
+from AWS import AWS
+
+A = AWS()
+FRESHSERVICE_API_KEY = A.getEnvVariable('/freshservice/apiKey')
 
 ## Create a log of this event
 logging.basicConfig(

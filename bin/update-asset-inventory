@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+# This script keeps Okta user information up to date with data in Insperity
+# 3 API calls per company to Insperity to pull relevant information for users
+# 2 API calls to Okta to get and then update the user with latest data
+
+### DECLARE GLOBAL VARIABLES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os;  SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
+import logging
+import asyncio
+import requests
+from pprint import pprint
+from datetime import datetime
+from notion_client import Client
+from AWS import AWS
+
+### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def theLogger(logger_name, level=logging.INFO):
+  """
+  Method to return a custom logger with the given name and level
+  """
+  logger = logging.getLogger(logger_name)
+  logger.setLevel(level)
+  log_format = logging.Formatter('%(message)s')
+  # Creating and adding the console handler
+  console_handler = logging.StreamHandler(sys.stdout)
+  console_handler.setFormatter(log_format)
+  logger.addHandler(console_handler)
+  # Creating and adding the file handler
+  file_handler = logging.FileHandler(logger_name, mode='w')
+  file_handler.setFormatter(log_format)
+  logger.addHandler(file_handler)
+  return logger
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+async def main(company):
+  NOTION_API_KEY = AWS().getEnvVariable('/notion/insperityKey')
+  FRESHSERVICE_API_KEY = AWS().getEnvVariable('/freshservice/apiKey')
+  NOTION =Client(auth=NOTION_API_KEY)
+  DB_ID = '61a7264c78d74be0a015e8c51dd77fdd'
+  FRESHSERVICE_URL = 'https://4catalyzer.freshservice.com'
+  ASSETS = []
+
+  #> Create a log of this event
+  logger = theLogger(f'{SYSADMINTOOLS_DIR}/log/{company}-assetIsnventory-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+  logger.debug(f'\nCreated log at {SYSADMINTOOLS_DIR}/log/{company}-assetInventory-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+
+  ### CALL INSPERITY APIs
+  page_num = 1
+  while True:
+    response = requests.get(url=f"{FRESHSERVICE_URL}/api/v2/assets?include=type_fields&per_page=100&page={page_num}", auth=(FRESHSERVICE_API_KEY, 'X'))
+    res = response.json() 
+ 
+    for asset in res['assets']: ASSETS.append({
+      "asset_tag": asset['asset_tag'] if asset['asset_tag'] else str(asset['id']),
+      "asset_type": asset['asset_type_id'],
+      "created": asset['created_at'],
+      "assigned": asset['assigned_on'],
+      "department": asset['department_id'],
+      "description": asset['description'],
+      "asset_name": asset['name'],
+      "mac_address": asset['type_fields']['mac_address_17000916680'],
+      "serial": asset['type_fields']['serial_number_17000916675'],
+      "user": asset['user_id'],
+      "id": asset['id']
+    }) 
+    if 'next' not in response.links: break
+    page_num += 1
+
+  # pprint(ASSETS)
+  # print(len(ASSETS))
+  # logger.debug(allEmployees)
+  ASSETS.sort(key=lambda x: x["asset_tag"])
+  for asset in ASSETS:
+    parent = { "database_id": DB_ID }
+    properties = {
+      "Asset Tag": {"title": [{"text": {"content": asset['asset_tag'] }}]},
+      "Type": {"type": "rich_text", "rich_text": [{"text": {"content": str(asset['asset_type']) if asset['asset_type'] else "" } }]},
+      "Company": {"type": "rich_text", "rich_text": [{"text": {"content": str(asset['department']) if asset['department'] else ""} }]},
+      "Description": {"type": "rich_text", "rich_text": [{"text": {"content": asset['description'] if asset['description'] else ""} }]},
+      "Asset Name": {"type": "rich_text", "rich_text": [{"text": {"content": asset['asset_name'].upper() if asset['asset_name'] else ""} }]},
+      "Assigned To": {"type": "rich_text", "rich_text": [{"text": {"content": str(asset['user']) if asset['user'] else "itadmin@4catalyzer.com" }}]},
+      "MAC Address": {"type": "rich_text", "rich_text": [{"text": {"content": asset['mac_address'].lower() if asset['mac_address'] else "" }}]},
+      "Serial Number": {"type": "rich_text", "rich_text": [{"text": {"content": asset['serial'].upper() if asset['serial'] else "" }}]}, 
+      "Created Date": {"date": {"start": asset['created'] or "2000-01-01T00:00:00.000Z" }},
+      "Assigned Date": {"date": {"start": asset['assigned'] or "2000-01-01T00:00:00.000Z" }},
+    }
+
+    ### UPDATE USER DATA IN OKTA
+    logger.info(f"Updating {asset['asset_tag']}...")
+
+    currentAsset = NOTION.databases.query(DB_ID, filter={"property": "Asset Tag", "title": { "equals": asset['asset_tag'] if asset['asset_tag'] else str(asset['id'])}})
+    if currentAsset['results']:
+      print(currentAsset) 
+      page_id = currentAsset['results'][0]['id']
+      # logger.debug(f"New profile data:\n{OKTA.user.profile}")
+      # logger.debug(f"Old profile in Okta:\n{currentAsset.profile}")
+      updatedAsset = NOTION.pages.update(page_id=page_id, properties=properties)
+
+      # if updatedAsset: logger.info(f'Successfully updated {updatedAsset.profile.display_name} ({updatedAsset.profile.login})\n')
+      if updatedAsset: print(updatedAsset)
+
+      else: logger.error(f'User not updated in Okta. {currentAsset}')
+    else: updatedAsset = NOTION.pages.create(parent=parent, properties=properties) 
+
+  logger.info(f'Done with {len(ASSETS)} total assets')
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+
