@@ -2,4 +2,4 @@ __pycache__
 ADMIN_KEYS.py
 lib/env.py
 log/*
-*.DS_Store
+**.DS_Store
