@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+# This script sets an env variable from the AWS Parameter Store
+# REQUIREMENTS: 
+#   1) Local environment variable
+#     - SYSADMINTOOLS_DIR: Your path to the root directory for sysAdminTools
+#   2) AWS Credentials.  This script is using aws sso login credentials
+
+### DECLARE GLOBAL VARIABLES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os
+SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+
+### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
+import argparse
+from AWS import AWS
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-n', '--name', 
+    help='Name of the variable. Required argument.',  
+    metavar=''
+)
+parser.add_argument('-v', '--value', 
+    help='Value of the variable. Required argument',  
+    metavar=''
+)
+parser.add_argument('-d', '--desc', 
+    help='Description of the variable. Required argument.',  
+    metavar=''
+)
+parser.add_argument('-t', '--type', 
+    help='Type of variable. Optional argument. Default is SecureString. Values: String|StringList|SecureString',  
+    default='SecureString',
+    metavar=''
+)
+parser.add_argument('-o', '--overwrite', 
+    help='Whether or not to overwrite the previous value, if it exists. Optional argument. Default is False. Values: True|False. ',  
+    default=False,
+    metavar=''
+)
+args = parser.parse_args()
+if not args.name or not args.value or not args.desc:
+    print('You have not entered the required arguments. Use --help for more information')
+    quit()
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+    res = AWS().setEnvVariable(args.name, args.value, args.desc, args.type, args.overwrite)
+    print(res)
+
+if __name__ == '__main__':
+    main()
