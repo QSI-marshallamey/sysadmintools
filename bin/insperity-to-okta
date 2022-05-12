@@ -128,6 +128,7 @@ async def main(company):
         if updatedUser: logger.info(f'Successfully updated {updatedUser.profile.display_name} ({updatedUser.profile.login})\n')
         else: logger.error(f'User not updated in Okta. {currentUser}')
       else: logger.info(f"Did not find user in Okta: {OKTA.user.profile['email']}") 
+    else: logger.info(f'No email for this user:\n{user}')
 
   logger.info(f'Done with {len(allEmployees)} total employees')
 
