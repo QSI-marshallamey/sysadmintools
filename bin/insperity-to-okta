@@ -51,8 +51,8 @@ async def main(company):
   allEmployees = {}
 
   #> Create a log of this event
-  logger = theLogger(f'{SYSADMINTOOLS_DIR}/log/{company}-cleanOktaGroups-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
-  logger.debug(f'\nCreated log at {SYSADMINTOOLS_DIR}/log/{company}-cleanOktaGroups-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+  logger = theLogger(f'{SYSADMINTOOLS_DIR}/log/{company}-insperityToOkta-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+  logger.debug(f'\nCreated log at {SYSADMINTOOLS_DIR}/log/{company}-insperityToOkta-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
 
   ### CALL INSPERITY APIs
   HEADERS = {'Authorization': f'APIKey {INSPERITY_API_KEY}'}

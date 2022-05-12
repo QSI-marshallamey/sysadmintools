@@ -65,7 +65,7 @@ async def main(company):
             allEmployees[employee['personId']]['position'] = employee['position']
 
     #> Write Insperity users to csv file
-    fields = ['organization', 'firstName', 'lastName', 'email', 'manager' ]
+    fields = ['organization', 'firstName', 'lastName', 'email', 'manager', 'department', 'title']
     with open(f'{SYSADMINTOOLS_DIR}/log/{company}-getInsperityUsers-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.csv', 'w') as csvfile:
       writer = csv.DictWriter(csvfile, fieldnames = fields)
       writer.writeheader()
@@ -76,7 +76,9 @@ async def main(company):
           'firstName': user['givenName'],
           'lastName': user['familyName'],
           'email': user['communication']['workEmail'],
-          'manager': user['position']['supervisor']   
+          'manager': user['position']['supervisor'] ,
+          'department': user['position']['department'].title(),  
+          'title': user['position']['jobTitle'].title()
         }])
         
     print(f'Done with {len(allEmployees)} total employees\n')
