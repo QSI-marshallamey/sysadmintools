@@ -64,7 +64,7 @@ async def main(company):
   response = requests.get(url=COMMUNICATION_URL, headers=HEADERS).json() 
   for employee in response['employees']:
     print(employee)
-    if employee['employmentStatus'] == 'HIRED': 
+    if employee['employmentStatus'] == 'HIRED' or 'REHIRED': 
       allEmployees[employee['personId']] = employee
 
   response = requests.get(url=COMPANY_URL, headers=HEADERS).json()  
