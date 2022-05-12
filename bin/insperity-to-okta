@@ -63,7 +63,6 @@ async def main(company):
   print(f'Retrieving users from {company.upper()} Insperity...\n')
   response = requests.get(url=COMMUNICATION_URL, headers=HEADERS).json() 
   for employee in response['employees']:
-    print(employee)
     if employee['employmentStatus'] == 'HIRED' or 'REHIRED': 
       allEmployees[employee['personId']] = employee
 
