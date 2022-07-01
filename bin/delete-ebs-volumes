@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+# This script deletes any EBS volumes that are not in use 
+# and not tagged with a Name
+
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
+from datetime import datetime
+import json
+import boto3
+import logging
+
+## Create a log of this event
+logging.basicConfig(
+    filename=f'{SYSADMINTOOLS_DIR}/log/delete-ebs-volumes-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log', 
+    filemode='w', 
+    format='%(message)s',
+  level=logging.INFO
+)
+
+# Open JSON file to grab volumes
+f = open('volumes.json')
+data = json.load(f)
+volumes = data["Volumes"]
+volumes_to_delete = []
+
+# Check for volumes to delete
+for vol in volumes:
+    ## If the volume has no tags and is unattached (available):
+    if 'Tags' not in vol and vol['State'] == 'available':
+        volumes_to_delete.append(vol['VolumeId'])
+
+    ## If the volume has tags and is unattached (available), check for name:
+    elif 'Tags' in vol and vol['State'] == 'available':
+        for tags in vol['Tags']:
+            ## If Name tag exists in volume skip, else delete
+            if 'Name' in tags.values():
+                logging.info(f"Skipping {tags['Value']}...") 
+            else: volumes_to_delete.append(vol['VolumeId'])     
+
+logging.info(f"Found {len(volumes)} unattached volumes")
+logging.info(f"Deleting {len(volumes_to_delete)} volumes")
+input("ARE YOU READY TO DELETE!?")
+
+for vol in volumes_to_delete: 
+    print(f'Deleting {vol}...')
+    try: boto3.resource('ec2').Volume(vol).delete()
+    except Exception as e: logging.error(f'Error deleting {vol}: {str(e)}')
+
+# Closing file
+f.close()

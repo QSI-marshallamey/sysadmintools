@@ -47,6 +47,7 @@ class Okta:
         updatedUser, res, err = await self.client.partial_update_user(userID, userProfile)
         if err: print("ERROR! ==> " + str(err))
         else: return updatedUser
+        
     # def suspendUser(self):
     # def activateUser(self):
     # def unsuspendUser(self):

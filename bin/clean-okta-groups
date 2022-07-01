@@ -21,7 +21,7 @@ from pprint import pprint
 from datetime import datetime
 from okta.client import Client as OktaClient
 from AWS import AWS
-from env import*
+from env import *
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 parser = argparse.ArgumentParser()
