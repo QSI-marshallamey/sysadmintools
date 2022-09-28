@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+# This script enables versioning on an S3 bucket.  A bucket argument is optional.
+# If no bucket argument, all buckets will have versioning enabled
+
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
+from datetime import datetime
+import argparse
+import logging
+from AWS import AWS
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-b', '--bucket', 
+    help='Name of the S3 bucket. If no bucket argument, all buckets will have versioning enabled.',  
+    metavar=''
+)
+args = parser.parse_args()
+
+
+### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+logging.basicConfig(
+    filename=f'{SYSADMINTOOLS_DIR}/log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-s3-enable-versioning.log', 
+    filemode='w', 
+    format='%(message)s',
+  level=logging.INFO
+)
+# Print all logs to screen
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+    S3_BUCKETS = [ AWS().getBucket(args.bucket) ] if args.bucket else AWS().listBuckets()
+    for bucket in S3_BUCKETS:
+        if AWS().enableBucketVersioning(bucket.name):
+            logging.info(f"Versioning enabled on {bucket.name}\n")
+        else: logging.info(f"ERROR: Versioning NOT enabled on {bucket.name}.\n")
+
+if __name__ == '__main__': main()
+
+
+
+# aws s3api put-public-access-block \
+#     --bucket my-bucket \
+#     --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"

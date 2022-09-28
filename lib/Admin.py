@@ -1,4 +1,4 @@
-class AdminFX:
+class Admin:
        ##### FUNCTIONS #####
     def __init__(self, usersFilePath, auth):
         #self.getUserList(usersFilePath)

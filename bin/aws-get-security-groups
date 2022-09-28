@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+# This script lists the current security groups in the account
+# REQUIREMENTS: 
+#   1) Local environment variable
+#     - SYSADMINTOOLS_DIR: Your path to the root directory for sysAdminTools
+#   2) AWS Credentials.  This script is using aws sso login credentials
+
+### IMPORT LIBRARIES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')  
+import logging
+from pprint import pprint
+from pprint import pformat
+from datetime import datetime
+from AWS import AWS
+
+### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def theLogger(logger_name, level=logging.INFO):
+  """
+  Method to return a custom logger with the given name and level
+  """
+  logger = logging.getLogger(logger_name)
+  logger.setLevel(level)
+  log_format = logging.Formatter('%(message)s')
+  # Creating and adding the console handler
+  console_handler = logging.StreamHandler(sys.stdout)
+  console_handler.setFormatter(log_format)
+  logger.addHandler(console_handler)
+  # Creating and adding the file handler
+  file_handler = logging.FileHandler(logger_name, mode='w')
+  file_handler.setFormatter(log_format)
+  logger.addHandler(file_handler)
+  return logger
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+
+    ## Create a log of this event
+    logger = theLogger(f'{SYSADMINTOOLS_DIR}/log/aws-get-security-groups-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+    logger.debug(f'\nCreated log at {SYSADMINTOOLS_DIR}/log/aws-get-security-groups-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log')
+
+    res = AWS().getSecurityGroups()
+    logger.info(pformat(res))
+    return res
+
+if __name__ == '__main__': main()

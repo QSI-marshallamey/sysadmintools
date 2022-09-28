@@ -102,3 +102,9 @@ All the important variables used for these scripts and libraries are located in 
 
 ### 2. send-text
 
+
+#### AVAILABLE SCRIPTS:
+
+1. **onboard-new-employees.py** - *Adds an employee to system and creates necessary accounts for proper onboarding*
+
+2. **reset-all-passwords.py** - *Resets GSuite password for all users*

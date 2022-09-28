@@ -1,5 +1,8 @@
+from urllib import response
+import json
 import boto3
 import logging
+from pprint import pprint, pformat
 from botocore.exceptions import ClientError
 
 class AWS:
@@ -16,7 +19,13 @@ class AWS:
         self.ssm_client = boto3.client('ssm')
         self.s3_client = boto3.client('s3')
         self.s3_resource = boto3.resource('s3')
+        self.ec2_client = boto3.client('ec2')
+        self.ecr_client = boto3.client('ecr')
 
+
+##################################################################################################
+#####################################  {{       S3       }}  #####################################
+##################################################################################################
     def createBucket(self, bucket_name, region=None):
         try:
             if region is None:
@@ -34,7 +43,7 @@ class AWS:
         return self.getBucket(bucket_name)
 
     def listBuckets(self):  
-        for bucket in self.s3_resource.buckets.all(): print(bucket.name)
+        return self.s3_resource.buckets.all()
 
     def getBucket(self, name):
         return self.s3_resource.Bucket(name)
@@ -43,10 +52,41 @@ class AWS:
         try: return bucket.delete()
         except: return False
     
+    def getBucketPolicy(self, bucket):
+        return self.s3_client.get_bucket_policy(Bucket=f"{bucket}")
+
+    def enableBucketVersioning(self, bucket):
+        try:
+            self.s3_resource.BucketVersioning(bucket).enable()
+            return True   
+        except:
+            return False
+
+    def suspendBucketVersioning(self, bucket):
+        try:
+            self.s3_resource.BucketVersioning(bucket).suspend()
+            print(f'Suspended versioning on {bucket}')
+            return True   
+        except:
+            print(f'Did not suspend versioning on {bucket}')
+            return False
+        
+    def putPublicAccessBlock(self, bucket):
+        return self.s3_client.put_public_access_block(
+            Bucket=f"{bucket}",
+            PublicAccessBlockConfiguration={
+                'BlockPublicAcls': True,
+                'IgnorePublicAcls': True,
+                'BlockPublicPolicy': True,
+                'RestrictPublicBuckets': True
+            }
+        )
+    
     def createObject(self, bucket, filepath, key):
         try: bucket.upload_file(filepath, key)
         except: return False
         return True
+
     def listObjects(self, bucket):
         for object in bucket.objects.all(): print(object)
 
@@ -57,7 +97,11 @@ class AWS:
     def deleteObject(self, bucket, key):
         try: bucket.Object(key).delete()
         except: return False
-    
+
+
+##################################################################################################
+####################################  {{ SYSTEMS MANAGER }}  #####################################
+##################################################################################################
     def setEnvVariable(self, name, value, desc, overwrite=False, type='SecureString'):
         try: 
             response = self.ssm_client.put_parameter(
@@ -87,7 +131,65 @@ class AWS:
         return print(f"{name} deleted.")
 
 
+##################################################################################################
+####################################  {{       EC2       }}  #####################################
+##################################################################################################
+    def getSecurityGroups(self):
+        try: response = self.ec2_client.describe_security_groups()
+        except ClientError as e:
+            logging.error(e)
+            return False
+        logging.info(response)
+        return response
 
+##################################################################################################
+###############################  {{ ELASTIC CONTAINER REGISTRY }}  ###############################
+##################################################################################################
+    def getRepos(self):
+        try: response = self.ecr_client.describe_repositories()
+        except ClientError as e:
+            logging.error(e)
+            return False
+        logging.info('***** ALL REPOSITORIES *****')
+        logging.info(pformat(response['repositories']))
+        logging.info('')
+        return response['repositories']
+
+    def enableImageScanning(self, repo, accountId):
+        try: response = self.ecr_client.put_image_scanning_configuration(
+            registryId=accountId,
+            repositoryName=repo,
+            imageScanningConfiguration={ 'scanOnPush': True }
+        )
+        except ClientError as e:
+            logging.error(e)
+            return False
+        logging.info(pformat(response))
+        return response
+    
+    def enableTagImmutability(self, repo, accountId):
+        try: response = self.ecr_client.put_image_tag_mutability(
+            registryId=accountId,
+            repositoryName=repo,
+            imageTagMutability='IMMUTABLE'
+        )
+        except ClientError as e:
+            logging.error(e)
+            return False
+        logging.info(pformat(response))
+        return response
+
+    def enableLifecyclePolicy(self, repo, accountId, policy):
+        try: response = self.ecr_client.put_lifecycle_policy(
+            registryId=accountId,
+            repositoryName=repo,
+            lifcyclePolicyText=policy
+        )
+        except ClientError as e:
+            logging.error(e)
+            return False
+        logging.info(pformat(response))
+        return response
 
 if __name__ == '__main__':
     A = AWS()

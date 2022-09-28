@@ -2,7 +2,9 @@
 *This is a toolbox for easy Python scripting in IT and System Administration*
 
 ## SETUP
-### Complete ADMIN_KEYS.py file
+The bin directory contains all the current scripts to perform various IT functions
+The lib directory contains classes with special functions for different APIs
+The log directory contains a log for every script that gets run in the sysAdminTools directory
 
 You will need access tokens to use many of the methods in the Staff class. The `getKeys()` method in the *Authentication* class will retrieve them from the *ADMIN_KEYS.py* file for use in other methods. A template for this file is included in the *files* directory.
 
@@ -29,38 +31,8 @@ You get the point.  Look it up and add the software application tokens you use f
 
 ## USAGE 
 
-#### AVAILABLE SCRIPTS:
-
-1. **onboard-new-employees.py** - *Adds an employee to system and creates necessary accounts for proper onboarding*
-
-2. **reset-all-passwords.py** - *Resets GSuite password for all users*
-
 #### CLASSES:
 
-**Authentication** - A library for obtaining and using credentials for scripts
-
-1. getKeys(keyFilePath)
-2. removeKeys()
-3. getGoogleAccessToken()
-
-**Communication** - A library for sending correspondence via email and SMS
-
-1. sendSMS(destination, msg)
-2. sendEmail(destination, msg)
- 
-**Staff** - A library for performing user related tasks
-
-1. getUserList(usersFilePath)
-2. getAllGSuiteUsers(nextPageToken)
-3. addGSuiteUser(user)
-4. removeGSuiteUser(userEmail)
-5. resetGSuitePassword(user)
-6. addToGSuiteGroups(user, groups)
-7. createSlackAccount(user)
-8. createZoomAccount()
-9. createHarvestAccount()
-10. scheduleOrientation()
-11. sendWelcomeMail()
 
 
 **Happy coding!**

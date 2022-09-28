@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+# This script check the bucket policy, if there is no bucket policy, it will enable the public access block 
+
+
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
+from datetime import datetime
+import json
+import logging
+from pprint import pformat
+from AWS import AWS
+
+## Create a log of this event
+logging.basicConfig(
+    filename=f'{SYSADMINTOOLS_DIR}/log/aws-lockdown-s3-buckets-{datetime.now().strftime("%Y-%m-%d-%H:%M")}.log', 
+    filemode='w', 
+    format='%(message)s',
+  level=logging.INFO
+)
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+    S3_BUCKETS = AWS().listBuckets()
+    for bucket in S3_BUCKETS:
+        logging.info(bucket.name)
+        try:
+            res = AWS().getBucketPolicy(bucket.name)
+            logging.info(pformat(json.loads(res['Policy'])))
+            logging.info(f"{bucket.name} has policy applied. Check policy before applying public access block.\n")
+        except Exception as e:
+            logging.error(str(e))
+            if 'NoSuchBucketPolicy' in str(e):
+                AWS().putPublicAccessBlock(bucket.name)
+                logging.info(f"Applying public access block to {bucket.name}.\n")
+
+if __name__ == '__main__': main()
+
+
+
+# aws s3api put-public-access-block \
+#     --bucket my-bucket \
+#     --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"

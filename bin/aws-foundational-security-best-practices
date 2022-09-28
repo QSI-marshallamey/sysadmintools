@@ -1,0 +1,27 @@
+#!/usr/bin/env zsh
+
+######################### ELASTIC CONTAINER REGISTRY (ECR)  #########################
+################  ECR.1  ################
+aws-ecr-enable-image-scanning
+################  ECR.2  ################
+aws-ecr-enable-tag-immutability
+################  ECR.3  ################
+aws-ecr-enable-lifecycle-policy
+
+######################### ELASTIC CONTAINER REGISTRY (ECS)  #########################
+################  ECR.1  ################
+aws-ecs-secure-networking-modes
+################  ECR.2  ################
+aws-ecs-disable-auto-public-ip
+################  ECR.3  ################
+aws-ecs-disable-host-process-sharing
+################  ECR.4  ################
+aws-ecs-remove-container-privilege
+################  ECR.5  ################
+aws-ecs-make-containers-read-only
+################  ECR.8  ################
+aws-ecs-disable-secrets-as-env-variables
+################  ECR.10  ################
+aws-ecs-upgrade-fargate-version
+################  ECR.12  ################
+aws-ecs-enable-container-insights
