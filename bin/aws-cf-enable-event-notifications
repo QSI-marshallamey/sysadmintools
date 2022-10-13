@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+### [CloudFormation.1] This control checks whether your CloudFormation stacks are sending event 
+### notifications to SNS topic. This control fails if CloudFormation stacks are not sending event
+### notifications to an SNS topic.
+
+# This script updates CloudFormation stack by configuring an SNS topic.  
+# A topic argument is required. This must be the ARN of the SNS topic. Multiple topics can be listed 
+# (example: arn:aws:sns:region:accountID:topic1,arn:aws:sns:region:accountID:topic2,etc)
+# An stack argument is optional. This must be the name of the CloudFormation stack. 
+# If no stack argument, all stacks will be updated with specified SNS topic(s)
+
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
+from datetime import datetime
+import argparse
+import logging
+from AWS import AWS
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-s', '--stacks', 
+    help='Comma-separated list of stack names to update. If no stack argument, all stacks will have SNS notifications enabled.',  
+    metavar=''
+)
+parser.add_argument('-t', '--topics', 
+    help='Comma-separated list of SNS topic ARNs to add. This is a required argument',  
+    metavar=''
+)
+args = parser.parse_args()
+
+if not args.topics:
+    print('You have not entered the required argument (--topics). Use --help for more information')
+    quit()
+
+### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+logging.basicConfig(
+    filename=f'{SYSADMINTOOLS_DIR}/log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-cf-enable-event-notifications.log', 
+    filemode='w', 
+    format='%(message)s',
+  level=logging.INFO
+)
+# Print all logs to screen
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+    logging.info(f"Retrieving stacks...")
+    STACKS = [ AWS().getStacks(args.stacks) ] if args.stacks else AWS().getStacks()
+    for stack in STACKS:
+        if stack['NotificationARNs']:
+            logging.warning(f"WARNING: {stack['StackName']} already has SNS topic configured. Skipping...\n")
+        elif 'ParentId' in stack:
+            logging.warning(f"WARNING: {stack['StackName']} is a nested stack. Update parent stack. Skipping...\n")
+        else: 
+            if 'Parameters' in stack: logging.info(f"{stack['Parameters']}.\n")
+            input(f"{stack['StackName']} Waiting for you")
+            stackId = AWS().updateNotificationARNs(stack, [args.topics]) 
+            print(stackId)
+            if stackId:
+                logging.info(f"SUCCESS: Notifications enabled on {stack['StackName']}.\n")
+            else: logging.error(f"ERROR: Notifications NOT enabled on {stack['StackName']}.\n")
+
+if __name__ == '__main__': main()

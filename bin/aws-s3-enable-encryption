@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+
+### [S3.4] S3 buckets should have server-side encryption enabled
+### This control checks that your S3 bucket either has Amazon S3 default encryption enabled or 
+### that the S3 bucket policy explicitly denies put-object requests without server-side encryption.
+
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
+from datetime import datetime
+import argparse
+import logging
+from AWS import AWS
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-b', '--buckets', 
+    help='Comma-separated list of S3 buckets. If no buckets argument, all buckets will have encryption enabled.',  
+    metavar=''
+)
+args = parser.parse_args()
+
+
+### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+logging.basicConfig(
+    filename=f'{SYSADMINTOOLS_DIR}/log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-s3-enable-encryption.log', 
+    filemode='w', 
+    format='%(message)s',
+    level=logging.INFO
+)
+# Print all logs to screen
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+    S3_BUCKETS = [ AWS().getBucket(args.buckets) ] if args.buckets else AWS().listBuckets()
+    
+    for bucket in S3_BUCKETS:
+        policy = AWS().getBucketEncryptionPolicy(bucket.name)
+        if policy: 
+            logging.warning(f'WARN: Found existing encryption policy on {bucket.name}\n{policy}')
+            logging.warning(f'WARN: Skipping {bucket.name}\n')
+        elif AWS().enableBucketEncryption(bucket.name):
+            logging.info(f"INFO: Encryption at rest now enabled on {bucket.name}\n")
+        else: 
+            logging.info(f"ERROR: Encryption not enabled on {bucket.name}.\n")
+
+if __name__ == '__main__': main()
