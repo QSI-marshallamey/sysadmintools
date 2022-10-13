@@ -51,4 +51,4 @@ aws-s3-enable-event-notifications
 #################  S3.12  #################
 aws-s3-disable-acls
 #################  S3.13  #################
-aws-s3-configure-lifecyle-policies
+aws-s3-configure-lifecyle-policy
