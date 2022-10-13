@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+
+### [S3.11] S3 buckets should have event notifications enabled 
+### This control checks whether S3 Event Notifications are enabled on an Amazon S3 bucket. This 
+### control fails if S3 Event Notifications are not enabled on a bucket.
+
+# This script updates CloudFormation bucket by configuring an SNS topic.  
+# A topic argument is required. This must be the ARN of the SNS topic. Multiple topics can be listed 
+# (example: arn:aws:sns:region:accountID:topic1,arn:aws:sns:region:accountID:topic2,etc)
+# An bucket argument is optional. This must be the name of the CloudFormation bucket. 
+# If no bucket argument, all buckets will be updated with specified SNS topic(s)
+
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
+from datetime import datetime
+import argparse
+import logging
+from AWS import AWS
+from pprint import pprint, pformat
+import json
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-b', '--buckets', 
+    help='Comma-separated list of bucket names to update. If no bucket argument, all buckets will have SNS notifications enabled.',  
+    metavar=''
+)
+parser.add_argument('-t', '--topics', 
+    help='Comma-separated list of SNS topic ARNs to add. This is a required argument',  
+    metavar=''
+)
+args = parser.parse_args()
+
+### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+logging.basicConfig(
+    filename=f'{SYSADMINTOOLS_DIR}/log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-s3-enable-event-notifications.log', 
+    filemode='w', 
+    format='%(message)s',
+  level=logging.INFO
+)
+# Print all logs to screen
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+    logging.info(f"Retrieving buckets...")
+    BUCKETS = [ AWS().getBuckets(args.buckets) ] if args.buckets else AWS().listBuckets()
+    SNS_TOPIC = 'arn:aws:sns:us-east-1:300212233050:qsi-it-s3-alarms'
+    TOPIC_CONFIG = {
+        'Id': 'qsi-it-s3-events',
+        'TopicArn': SNS_TOPIC,
+        'Events': [
+            's3:ReducedRedundancyLostObject',
+            's3:ObjectRemoved:*',
+            's3:ObjectRestore:*',
+            's3:LifecycleTransition',
+            's3:IntelligentTiering',
+            's3:ObjectAcl:Put',
+            's3:LifecycleExpiration:*',
+            's3:ObjectTagging:*',
+        ]
+    }
+
+    for bucket in BUCKETS:
+        bucketConfig = AWS().getEventNotifications(bucket.name)
+        if not bucketConfig: continue
+        if bucketConfig and 'TopicConfigurations' in bucketConfig:
+            if next((item for item in bucketConfig['TopicConfigurations'] if item['Id'] == 'qsi-it-s3-events'), None):
+                logging.info(f"WARNING: Event notifications already enabled on {bucket.name}. Skipping...\n")
+                continue
+            else: bucketConfig['TopicConfigurations'].append(TOPIC_CONFIG)
+        else: bucketConfig['TopicConfigurations'] = [ TOPIC_CONFIG ]
+        if 'ResponseMetadata' in bucketConfig: del bucketConfig['ResponseMetadata']
+        logging.info(f"{bucket.name}\n{bucketConfig}")
+        #input(f"Waiting for you")
+        if AWS().setEventNotifications(bucket.name, bucketConfig):
+            logging.info(f"SUCCESS: Event notifications enabled on {bucket.name}.\n")
+        else: logging.error(f"ERROR: Notifications NOT enabled on {bucket.name}.\n")
+
+if __name__ == '__main__': main()

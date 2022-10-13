@@ -1,5 +1,9 @@
 #!/usr/bin/env zsh
 
+######################### CLOUDFORMATION (CF)  #########################
+##########  CLOUDFORMATION.1  ###########
+aws-cf-enable-event-notifications
+
 ######################### ELASTIC CONTAINER REGISTRY (ECR)  #########################
 ################  ECR.1  ################
 aws-ecr-enable-image-scanning
@@ -8,20 +12,43 @@ aws-ecr-enable-tag-immutability
 ################  ECR.3  ################
 aws-ecr-enable-lifecycle-policy
 
-######################### ELASTIC CONTAINER REGISTRY (ECS)  #########################
-################  ECR.1  ################
+######################### ELASTIC CONTAINER SERVICE (ECS)  #########################
+################  ECS.1  ################
 aws-ecs-secure-networking-modes
-################  ECR.2  ################
+################  ECS.2  ################
 aws-ecs-disable-auto-public-ip
-################  ECR.3  ################
+################  ECS.3  ################
 aws-ecs-disable-host-process-sharing
-################  ECR.4  ################
+################  ECS.4  ################
 aws-ecs-remove-container-privilege
-################  ECR.5  ################
+################  ECS.5  ################
 aws-ecs-make-containers-read-only
-################  ECR.8  ################
+################  ECS.8  ################
 aws-ecs-disable-secrets-as-env-variables
-################  ECR.10  ################
+################  ECS.10  ################
 aws-ecs-upgrade-fargate-version
-################  ECR.12  ################
+################  ECS.12  ################
 aws-ecs-enable-container-insights
+
+
+######################### S3  #########################
+#################  S3.1  #################
+aws-s3-account-block-public-access
+############ S3.2  S3.3  S3.8 ############
+aws-s3-bucket-block-public-access
+#################  S3.4  #################
+aws-s3-enable-encryption
+#################  S3.5  #################
+aws-s3-require-ssl
+#################  S3.6  #################
+aws-s3-restrict-cross-account-access
+#################  S3.9  #################
+aws-s3-enable-bucket-access-logging
+#################  S3.10  #################
+aws-s3-enable-versioning
+#################  S3.11  #################
+aws-s3-enable-event-notifications
+#################  S3.12  #################
+aws-s3-disable-acls
+#################  S3.13  #################
+aws-s3-configure-lifecyle-policies

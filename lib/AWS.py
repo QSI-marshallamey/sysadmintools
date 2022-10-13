@@ -1,9 +1,11 @@
 from urllib import response
 import json
+from botocore import exceptions
+import botocore
 import boto3
 import logging
 from pprint import pprint, pformat
-from botocore.exceptions import ClientError
+
 
 class AWS:
     '''
@@ -16,15 +18,59 @@ class AWS:
         # Save keys in file keys object
         #For every user, format data and add to user list
         self.profile = profile
+        self.cf_client = boto3.client('cloudformation')
         self.ssm_client = boto3.client('ssm')
         self.s3_client = boto3.client('s3')
         self.s3_resource = boto3.resource('s3')
         self.ec2_client = boto3.client('ec2')
         self.ecr_client = boto3.client('ecr')
 
+##################################################################################################
+#####################################  {{ CLOUDFORMATION }}  #####################################
+##################################################################################################
+    def getStacks(self, stack_names=None):
+        try: response = self.cf_client.describe_stacks(stack_names) if stack_names else self.cf_client.describe_stacks()
+        except exceptions.ClientError as e:
+            logging.error(e)
+            return False
+        logging.info('This script will attempt to enable notifications on the following stacks:')
+        for stack in response['Stacks']: logging.info(stack['StackName'])
+        logging.info('')
+        return response['Stacks']
+    
+    def updateNotificationARNs(self, stack, topics):
+        updatedParams = stack['Parameters'] if 'Parameters' in stack else []
+        for param in updatedParams:
+            del param['ParameterValue']
+            param['UsePreviousValue'] = True
+        print(updatedParams)
+        input('Look goood!?')
+        try: response = self.cf_client.update_stack(
+            StackName=stack['StackName'],
+            NotificationARNs=topics,
+            UsePreviousTemplate=True,
+            Parameters=updatedParams
+        )
+        except exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'InsufficientCapabilitiesException':
+                logging.error(f'INSUFFICIENT CAPABILITIES ERROR: {e}')
+                input('Try again!?')
+                response = self.cf_client.update_stack(
+                    StackName=stack['StackName'],
+                    NotificationARNs=topics,
+                    UsePreviousTemplate=True,
+                    Parameters=updatedParams,
+                    Capabilities=['CAPABILITY_IAM']
+                )
+            else:    
+                logging.error(f' ERROR: {e}')
+                return False
+        logging.info(f"SUCCESS: Updated { response['StackId'] }\n")
+        return response['StackId']
 
 ##################################################################################################
 #####################################  {{       S3       }}  #####################################
+### https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#client ####
 ##################################################################################################
     def createBucket(self, bucket_name, region=None):
         try:
@@ -37,38 +83,58 @@ class AWS:
                 location = {'LocationConstraint': region}
                 s3_client.create_bucket(Bucket=bucket_name,
                                         CreateBucketConfiguration=location)
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         return self.getBucket(bucket_name)
 
-    def listBuckets(self):  
-        return self.s3_resource.buckets.all()
-
     def getBucket(self, name):
         return self.s3_resource.Bucket(name)
+
+    def listBuckets(self):  
+        try:
+            response = self.s3_client.list_buckets()
+            if 'Buckets' in response: return response
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
         
     def deleteBucket(self, bucket):
         try: return bucket.delete()
         except: return False
     
     def getBucketPolicy(self, bucket):
-        return self.s3_client.get_bucket_policy(Bucket=f"{bucket}")
+        return self.s3_client.get_bucket_policy(Bucket=bucket)
 
     def enableBucketVersioning(self, bucket):
         try:
-            self.s3_resource.BucketVersioning(bucket).enable()
-            return True   
-        except:
+            response = self.s3_client.put_bucket_versioning(
+                Bucket=bucket,
+                VersioningConfiguration={'Status': 'Enabled'}
+            )  
+            if 'ResponseMetadata' in response: return True
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
             return False
 
     def suspendBucketVersioning(self, bucket):
         try:
-            self.s3_resource.BucketVersioning(bucket).suspend()
-            print(f'Suspended versioning on {bucket}')
-            return True   
-        except:
-            print(f'Did not suspend versioning on {bucket}')
+            response = self.s3_client.put_bucket_versioning(
+                Bucket=bucket,
+                VersioningConfiguration={'Status': 'Suspended'}
+            )  
+            if 'ResponseMetadata' in response: return True
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
             return False
         
     def putPublicAccessBlock(self, bucket):
@@ -97,6 +163,125 @@ class AWS:
     def deleteObject(self, bucket, key):
         try: bucket.Object(key).delete()
         except: return False
+    
+    def getEventNotifications(self, bucket):
+        try: return self.s3_client.get_bucket_notification_configuration(Bucket=bucket)
+        except exceptions.ClientError as e:
+            logging.error(e)
+            return False
+
+    def setEventNotifications(self, bucket, config):
+        try:
+            self.s3_client.put_bucket_notification_configuration(
+                Bucket=bucket,
+                NotificationConfiguration=config,
+                SkipDestinationValidation=True
+            )
+            return True
+        except exceptions.ClientError as e:
+            logging.error(e)
+            return False
+
+    def getBucketEncryptionPolicy(self, bucket):
+        try:
+            response = self.s3_client.get_bucket_encryption(
+                Bucket=bucket
+            )
+            if 'ServerSideEncryptionConfiguration' in response: return response
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(e)
+            return False   
+
+    def enableBucketEncryption(self, bucket):
+        try:
+            response = self.s3_client.put_bucket_encryption(
+                Bucket=bucket,
+                ServerSideEncryptionConfiguration={
+                    'Rules': [{
+                        'ApplyServerSideEncryptionByDefault': { 'SSEAlgorithm': 'AES256' }
+                    }]
+                }
+            )
+            if response is None: return True
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def requireSSL(self, bucket, updatedPolicy):
+        try:
+            response = self.s3_client.put_bucket_policy(
+                Bucket=bucket,
+                Policy=updatedPolicy
+            )
+            if 'ResponseMetadata' in response: return True
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+    
+    def getBucketLoggingStatus(self, bucket):
+        try:
+            response = self.s3_client.get_bucket_logging( Bucket=bucket )
+            if 'LoggingEnabled' in response: return response
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def enableBucketLogging(self, bucket, targetBucket, targetPrefix=f's3-access-logs/'):
+        try:
+            response = self.s3_client.put_bucket_logging(
+                Bucket=bucket,
+                BucketLoggingStatus={
+                    'LoggingEnabled': {
+                        'TargetBucket': targetBucket,
+                        'TargetPrefix': f'{targetPrefix}{bucket}'
+                    }
+                }
+            )
+            if 'ResponseMetadata' in response: return response
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def getLifecyclePolicy(self, bucket):
+        try:
+            response = self.s3_client.get_bucket_lifecycle_configuration( Bucket=bucket )
+            if 'Rules' in response: return response
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def setLifecyclePolicy(self, bucket, policy):
+        try:
+            response = self.s3_client.put_bucket_lifecycle_configuration(
+                Bucket=bucket,
+                LifecycleConfiguration=policy
+            )
+            if 'ResponseMetadata' in response: return response
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except exceptions.ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
 
 
 ##################################################################################################
@@ -111,21 +296,21 @@ class AWS:
                 Description=desc,
                 Overwrite=overwrite
             )
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         return response
 
     def getEnvVariable(self, name):
         try: response = self.ssm_client.get_parameter(Name=name, WithDecryption=True)
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         return response['Parameter']['Value']
     
     def deleteEnvVariable(self, name):
         try: response = self.ssm_client.delete_parameter(Name=name)
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         return print(f"{name} deleted.")
@@ -136,7 +321,7 @@ class AWS:
 ##################################################################################################
     def getSecurityGroups(self):
         try: response = self.ec2_client.describe_security_groups()
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         logging.info(response)
@@ -147,7 +332,7 @@ class AWS:
 ##################################################################################################
     def getRepos(self):
         try: response = self.ecr_client.describe_repositories()
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         logging.info('***** ALL REPOSITORIES *****')
@@ -161,7 +346,7 @@ class AWS:
             repositoryName=repo,
             imageScanningConfiguration={ 'scanOnPush': True }
         )
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         logging.info(pformat(response))
@@ -173,7 +358,7 @@ class AWS:
             repositoryName=repo,
             imageTagMutability='IMMUTABLE'
         )
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         logging.info(pformat(response))
@@ -185,7 +370,7 @@ class AWS:
             repositoryName=repo,
             lifcyclePolicyText=policy
         )
-        except ClientError as e:
+        except exceptions.ClientError as e:
             logging.error(e)
             return False
         logging.info(pformat(response))

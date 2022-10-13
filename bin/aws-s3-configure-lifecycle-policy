@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+### [S3.5] S3 buckets should require requests to use Secure Socket Layer
+### This control checks whether S3 buckets have policies that require requests
+### to use Secure Socket Layer (SSL).
+
+import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
+import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
+from datetime import datetime
+import argparse
+import logging
+from AWS import AWS
+
+### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+parser = argparse.ArgumentParser()
+parser.add_argument('-b', '--buckets', 
+    help='Comma-separated list of the S3 bucket names. If no buckets argument, all buckets will have SSL enforced.',  
+    metavar=''
+)
+args = parser.parse_args()
+
+
+### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+logging.basicConfig(
+    filename=f'{SYSADMINTOOLS_DIR}/log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-s3-require-ssl.log', 
+    filemode='w', 
+    format='%(message)s',
+    level=logging.INFO
+)
+# Print all logs to screen
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+
+### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def main():
+    BLANK_POLICY = {
+        'Version': '2012-10-17',
+        'Statement': []
+    }
+    SSL_STATEMENT = {
+        "Sid": "AllowSSLRequestsOnly",
+        "Action": "s3:*",
+        "Effect": "Deny",
+        "Resource": [
+            f"arn:aws:s3:::{bucket.name}",
+            f"arn:aws:s3:::{bucket.name}/*"
+        ],
+        "Condition": {
+            "Bool": {
+                    "aws:SecureTransport": "false"
+            }
+        },
+        "Principal": "*"
+    }
+
+    S3_BUCKETS = [ AWS().getBucket(args.buckets) ] if args.buckets else AWS().listBuckets()
+    for bucket in S3_BUCKETS:
+        policy = AWS().getBucketPolicy(bucket.name)
+
+        if policy: updatedPolicy = policy['Statement'].append(SSL_STATEMENT)
+        else: updatedPolicy = BLANK_POLICY['Statement'].append(SSL_STATEMENT)
+
+        if AWS().requireSSL(bucket.name, updatedPolicy):
+            logging.info(f"INFO: SSL now enforced on {bucket.name}\n")
+        else: logging.info(f"ERROR: SSL not enforced on {bucket.name}.\n")
+
+if __name__ == '__main__': main()
