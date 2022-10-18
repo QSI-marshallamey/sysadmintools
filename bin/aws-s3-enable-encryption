@@ -36,13 +36,14 @@ def main():
     S3_BUCKETS = [ AWS().getBucket(args.buckets) ] if args.buckets else AWS().listBuckets()
     
     for bucket in S3_BUCKETS:
-        policy = AWS().getBucketEncryptionPolicy(bucket.name)
+        logging.info(f"INFO: Looking for encryption policy on {bucket['Name']}...")
+        policy = AWS().getBucketEncryptionPolicy(bucket['Name'])
         if policy: 
-            logging.warning(f'WARN: Found existing encryption policy on {bucket.name}\n{policy}')
-            logging.warning(f'WARN: Skipping {bucket.name}\n')
-        elif AWS().enableBucketEncryption(bucket.name):
-            logging.info(f"INFO: Encryption at rest now enabled on {bucket.name}\n")
+            logging.warning(f"WARN: Found existing encryption policy on {bucket['Name']}\n{policy}")
+            logging.warning(f"WARN: Skipping {bucket['Name']}\n")
+        elif AWS().enableBucketEncryption(bucket['Name']):
+            logging.info(f"INFO: Encryption at rest now enabled on {bucket['Name']}\n")
         else: 
-            logging.info(f"ERROR: Encryption not enabled on {bucket.name}.\n")
+            logging.info(f"ERROR: Encryption not enabled on {bucket['Name']}.\n")
 
 if __name__ == '__main__': main()

@@ -94,7 +94,7 @@ class AWS:
     def listBuckets(self):  
         try:
             response = self.s3_client.list_buckets()
-            if 'Buckets' in response: return response
+            if 'Buckets' in response: return response['Buckets']
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
@@ -188,6 +188,9 @@ class AWS:
                 Bucket=bucket
             )
             if 'ServerSideEncryptionConfiguration' in response: return response
+            elif 'ServerSideEncryptionConfigurationNotFoundError' in response:
+                logging.info(f'INFO: No encryption configuration for this bucket')
+                return False
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
@@ -205,7 +208,7 @@ class AWS:
                     }]
                 }
             )
-            if response is None: return True
+            if 'ResponseMetadata' in response: return True
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
@@ -238,14 +241,14 @@ class AWS:
             logging.error(f'ERROR: {e}')
             return False
 
-    def enableBucketLogging(self, bucket, targetBucket, targetPrefix=f's3-access-logs/'):
+    def enableBucketLogging(self, bucket, targetBucket, targetPrefix=f's3-access-logs'):
         try:
             response = self.s3_client.put_bucket_logging(
                 Bucket=bucket,
                 BucketLoggingStatus={
                     'LoggingEnabled': {
                         'TargetBucket': targetBucket,
-                        'TargetPrefix': f'{targetPrefix}{bucket}'
+                        'TargetPrefix': f'{targetPrefix}/{bucket}'
                     }
                 }
             )

@@ -46,13 +46,14 @@ def main():
     S3_BUCKETS = [ AWS().getBucket(args.buckets) ] if args.buckets else AWS().listBuckets()
     
     for bucket in S3_BUCKETS:
-        loggingEnabled = AWS().getBucketLoggingStatus(bucket.name)
+        logging.info(f"INFO: Looking for access logging policy on {bucket['Name']}...")
+        loggingEnabled = AWS().getBucketLoggingStatus(bucket['Name'])
         if loggingEnabled: 
-            logging.warning(f'WARN: {bucket.name} already has logging enabled.\n{loggingEnabled}')
-            logging.warning(f'WARN: Skipping {bucket.name}\n')
-        elif AWS().enableBucketLogging(bucket.name, args.target):
-            logging.info(f"INFO: Access logging now enabled on {bucket.name}\n")
+            logging.warning(f"WARN: {bucket['Name']} already has logging enabled.\n{loggingEnabled}")
+            logging.warning(f"WARN: Skipping {bucket['Name']}\n")
+        elif AWS().enableBucketLogging(bucket['Name'], args.target):
+            logging.info(f"INFO: Access logging now enabled on {bucket['Name']}\n")
         else: 
-            logging.info(f"ERROR: Access logging not enabled on {bucket.name}.\n")
+            logging.info(f"ERROR: Access logging not enabled on {bucket['Name']}.\n")
 
 if __name__ == '__main__': main()

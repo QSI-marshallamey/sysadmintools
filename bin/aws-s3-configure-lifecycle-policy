@@ -14,7 +14,7 @@ from AWS import AWS
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 parser = argparse.ArgumentParser()
 parser.add_argument('-b', '--buckets', 
-    help='Comma-separated list of the S3 bucket names. If no buckets argument, all buckets will have SSL enforced.',  
+    help='Comma-separated list of the S3 bucket names. If no buckets argument, all buckets will have default lifecycle policies configured.',  
     metavar=''
 )
 args = parser.parse_args()
@@ -39,6 +39,7 @@ def main():
     DEFAULT_RULE =  {
         'ID': 'Intelligent Tiering',
         'Status': 'Enabled',
+        'Prefix': '',
         'Transitions': [
             {
                 'Days': 30,
@@ -48,8 +49,7 @@ def main():
         'NoncurrentVersionTransitions': [
             {
                 'NoncurrentDays': 7,
-                'StorageClass': 'GLACIER_IR',
-                'NewerNoncurrentVersions': 1
+                'StorageClass': 'GLACIER_IR'
             }
         ]
     }
@@ -57,13 +57,19 @@ def main():
 
     S3_BUCKETS = [ AWS().getBucket(args.buckets) ] if args.buckets else AWS().listBuckets()
     for bucket in S3_BUCKETS:
-        policy = AWS().getLifecyclePolicy(bucket.name)
-
-        if policy: updatedPolicy = policy['Rules'].append(DEFAULT_RULE)
-        else: updatedPolicy = BLANK_POLICY['Rules'].append(DEFAULT_RULE)
-
-        if AWS().setLifecyclePolicy(bucket.name, updatedPolicy):
-            logging.info(f"INFO: SSL now enforced on {bucket.name}\n")
-        else: logging.info(f"ERROR: SSL not enforced on {bucket.name}.\n")
+        logging.info(f"INFO: Looking for lifecycle policy on {bucket['Name']}...")
+        policy = AWS().getLifecyclePolicy(bucket['Name'])
+        
+        if policy:
+            res = next((rule for rule in policy['Rules'] if rule['ID'] == "Intelligent Tiering"), None)
+            if res: 
+                logging.info(f"INFO: Default lifecycle policy already configured on {bucket['Name']}\n")
+                continue
+            else: policy['Rules'].append(DEFAULT_RULE)
+        else: BLANK_POLICY['Rules'].append(DEFAULT_RULE)
+        if AWS().setLifecyclePolicy(bucket['Name'], BLANK_POLICY):
+            logging.info(f"INFO: Lifecycle policy configured on {bucket['Name']}\n")
+        else: logging.info(f"ERROR: Lifecycle policy NOT configured on {bucket['Name']}.\n")
+        BLANK_POLICY = { 'Rules': [] }
 
 if __name__ == '__main__': main()
