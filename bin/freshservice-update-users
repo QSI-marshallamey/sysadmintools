@@ -12,7 +12,7 @@ from pprint import pprint
 from datetime import datetime
 from time import sleep
 from Okta import Okta
-from AWS import AWS
+from lib.AWS import AWS
 from env import *
 
 FRESHSERVICE_URL = 'https://4catalyzer.freshservice.com'

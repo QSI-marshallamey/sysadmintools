@@ -43,17 +43,20 @@ logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 ### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def main():
-    S3_BUCKETS = [ AWS().getBucket(args.buckets) ] if args.buckets else AWS().listBuckets()
+    BUCKET_ARGS = args.buckets.split(',') or None
+    S3_BUCKETS = [ AWS().getBucket(bucket) for bucket in BUCKET_ARGS ] if args.buckets else AWS().listBuckets()
+    print(BUCKET_ARGS)
+    print(S3_BUCKETS)
     
     for bucket in S3_BUCKETS:
-        logging.info(f"INFO: Looking for access logging policy on {bucket['Name']}...")
-        loggingEnabled = AWS().getBucketLoggingStatus(bucket['Name'])
-        if loggingEnabled: 
-            logging.warning(f"WARN: {bucket['Name']} already has logging enabled.\n{loggingEnabled}")
-            logging.warning(f"WARN: Skipping {bucket['Name']}\n")
-        elif AWS().enableBucketLogging(bucket['Name'], args.target):
-            logging.info(f"INFO: Access logging now enabled on {bucket['Name']}\n")
+        logging.info(f"INFO: Looking for access logging policy on {bucket.name}...")
+        loggingEnabled = AWS().getBucketLoggingStatus(bucket.name)
+        if loggingEnabled and loggingEnabled['LoggingEnabled']['TargetPrefix'] == f"s3-access-logs/{bucket.name}": 
+            logging.warning(f"WARN: {bucket.name} already has logging enabled.\n{loggingEnabled}")
+            logging.warning(f"WARN: Skipping {bucket.name}\n")
+        elif AWS().enableBucketLogging(bucket.name, args.target):
+            logging.info(f"INFO: Access logging now enabled on {bucket.name}\n")
         else: 
-            logging.info(f"ERROR: Access logging not enabled on {bucket['Name']}.\n")
+            logging.info(f"ERROR: Access logging not enabled on {bucket.name}.\n")
 
 if __name__ == '__main__': main()

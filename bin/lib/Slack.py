@@ -19,7 +19,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 from datetime import datetime
-from AWS import AWS
+from lib.AWS import AWS
 
 class Slack:
     '''

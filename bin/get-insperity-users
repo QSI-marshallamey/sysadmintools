@@ -16,7 +16,7 @@ import argparse
 import logging
 import requests
 from datetime import datetime
-from AWS import AWS
+from lib.AWS import AWS
 from env import *
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

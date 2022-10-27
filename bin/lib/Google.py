@@ -21,7 +21,7 @@ from google.auth import crypt
 from google.auth import jwt
 
 from datetime import datetime
-from AWS import AWS
+from lib.AWS import AWS
 
 ##### VARIABLES #####
 users = []

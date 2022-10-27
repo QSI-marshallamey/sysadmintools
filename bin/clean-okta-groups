@@ -20,7 +20,7 @@ import argparse
 from pprint import pprint
 from datetime import datetime
 from okta.client import Client as OktaClient
-from AWS import AWS
+from lib.AWS import AWS
 from env import *
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

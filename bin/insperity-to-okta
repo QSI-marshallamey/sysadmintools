@@ -12,7 +12,7 @@ import argparse
 import requests
 from datetime import datetime
 from Okta import Okta
-from AWS import AWS
+from lib.AWS import AWS
 from env import *
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

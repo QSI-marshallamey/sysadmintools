@@ -11,12 +11,10 @@
 # This script also performs that task, however, you will not pass security check without 
 # using the deprecated method as well.
 
-
-import os; SYSADMINTOOLS_DIR = os.getenv('SYSADMINTOOLS_DIR')
-import sys; sys.path.insert(1, f'{SYSADMINTOOLS_DIR}/lib')
 from datetime import datetime
 import argparse
 import logging
+import sys
 from AWS import AWS
 
 ### PARSE ARGUMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -30,7 +28,7 @@ args = parser.parse_args()
 
 ### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 logging.basicConfig(
-    filename=f'{SYSADMINTOOLS_DIR}/log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-ecr-enable-tag-immutability.log', 
+    filename=f'../log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-ecr-enable-tag-immutability.log', 
     filemode='w', 
     format='%(message)s',
   level=logging.INFO
@@ -40,16 +38,13 @@ logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 
 ### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def main():
-    ECR_REPOS = [ AWS().getRepos(args.repo) ] if args.repo else AWS().getRepos()
-    for repo in ECR_REPOS:
-        if repo['imageTagMutability'] == 'IMMUTABLE':
-            logging.warning(f"WARNING: Tag immutability already enabled on {repo['repositoryName']}. Skipping...\n")
-        else: 
-            #input('Waiting for you')
-            response = AWS().enableTagImmutability(repo['repositoryName'], repo['registryId']) 
-            if response and response['imageTagMutability'] == 'IMMUTABLE':
-                logging.info(f"SUCCESS: Tag immutability enabled on {response['repositoryName']}.\n")
-            else: logging.error(f"ERROR: Tag immutability NOT enabled on {repo['repositoryName']}.\n")
-
-if __name__ == '__main__': main()
+ECR_REPOS = [ AWS().getRepos(args.repo) ] if args.repo else AWS().getRepos()
+for repo in ECR_REPOS:
+    if repo['imageTagMutability'] == 'IMMUTABLE':
+        logging.warning(f"WARNING: Tag immutability already enabled on {repo['repositoryName']}. Skipping...\n")
+    else: 
+        #input('Waiting for you')
+        response = AWS().enableTagImmutability(repo['repositoryName'], repo['registryId']) 
+        if response and response['imageTagMutability'] == 'IMMUTABLE':
+            logging.info(f"SUCCESS: Tag immutability enabled on {response['repositoryName']}.\n")
+        else: logging.error(f"ERROR: Tag immutability NOT enabled on {repo['repositoryName']}.\n")

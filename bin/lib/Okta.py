@@ -1,7 +1,7 @@
 import asyncio
 from okta.client import Client as OktaClient
 from okta.models import User
-from AWS import AWS
+from lib.AWS import AWS
 
 class Okta:
     '''

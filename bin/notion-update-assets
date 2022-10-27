@@ -15,7 +15,7 @@ import requests
 from pprint import pprint
 from datetime import datetime
 from notion_client import Client
-from AWS import AWS
+from lib.AWS import AWS
 from env import *
 
 ### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

@@ -1,6 +1,6 @@
 from urllib import response
 import json
-from botocore import exceptions
+from botocore.exceptions import ClientError
 import botocore
 import boto3
 import logging
@@ -17,20 +17,21 @@ class AWS:
     def __init__(self, profile='default'):
         # Save keys in file keys object
         #For every user, format data and add to user list
-        self.profile = profile
+        self.session = boto3.Session(profile_name=profile)
         self.cf_client = boto3.client('cloudformation')
         self.ssm_client = boto3.client('ssm')
         self.s3_client = boto3.client('s3')
         self.s3_resource = boto3.resource('s3')
         self.ec2_client = boto3.client('ec2')
         self.ecr_client = boto3.client('ecr')
+        self.sqs_client = boto3.client('sqs')
 
 ##################################################################################################
 #####################################  {{ CLOUDFORMATION }}  #####################################
 ##################################################################################################
     def getStacks(self, stack_names=None):
         try: response = self.cf_client.describe_stacks(stack_names) if stack_names else self.cf_client.describe_stacks()
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         logging.info('This script will attempt to enable notifications on the following stacks:')
@@ -51,7 +52,7 @@ class AWS:
             UsePreviousTemplate=True,
             Parameters=updatedParams
         )
-        except exceptions.ClientError as e:
+        except ClientError as e:
             if e.response['Error']['Code'] == 'InsufficientCapabilitiesException':
                 logging.error(f'INSUFFICIENT CAPABILITIES ERROR: {e}')
                 input('Try again!?')
@@ -83,7 +84,7 @@ class AWS:
                 location = {'LocationConstraint': region}
                 s3_client.create_bucket(Bucket=bucket_name,
                                         CreateBucketConfiguration=location)
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         return self.getBucket(bucket_name)
@@ -92,13 +93,17 @@ class AWS:
         return self.s3_resource.Bucket(name)
 
     def listBuckets(self):  
+        '''
+        DEFINITION: This is a definition
+        '''
+        S3 = self.session.client('s3')
         try:
-            response = self.s3_client.list_buckets()
+            response = S3.list_buckets()
             if 'Buckets' in response: return response['Buckets']
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
         
@@ -107,7 +112,16 @@ class AWS:
         except: return False
     
     def getBucketPolicy(self, bucket):
-        return self.s3_client.get_bucket_policy(Bucket=bucket)
+        S3 = self.session.client('s3')
+        try:
+            response = S3.get_bucket_policy( Bucket=bucket )
+            if 'Policy' in response: return response['Policy']
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False          
 
     def enableBucketVersioning(self, bucket):
         try:
@@ -119,7 +133,7 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
 
@@ -133,7 +147,7 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
         
@@ -166,7 +180,7 @@ class AWS:
     
     def getEventNotifications(self, bucket):
         try: return self.s3_client.get_bucket_notification_configuration(Bucket=bucket)
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
 
@@ -178,7 +192,7 @@ class AWS:
                 SkipDestinationValidation=True
             )
             return True
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
 
@@ -194,7 +208,7 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False   
 
@@ -212,13 +226,14 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
 
     def requireSSL(self, bucket, updatedPolicy):
+        S3 = self.session.client('s3')
         try:
-            response = self.s3_client.put_bucket_policy(
+            response = S3.put_bucket_policy(
                 Bucket=bucket,
                 Policy=updatedPolicy
             )
@@ -226,7 +241,7 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
     
@@ -237,18 +252,19 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
 
     def enableBucketLogging(self, bucket, targetBucket, targetPrefix=f's3-access-logs'):
+        # DEFINITION: This is a definition
         try:
             response = self.s3_client.put_bucket_logging(
                 Bucket=bucket,
                 BucketLoggingStatus={
                     'LoggingEnabled': {
                         'TargetBucket': targetBucket,
-                        'TargetPrefix': f'{targetPrefix}/{bucket}'
+                        'TargetPrefix': f's3-access-logs/{bucket}'
                     }
                 }
             )
@@ -256,7 +272,7 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
 
@@ -267,7 +283,7 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
 
@@ -281,10 +297,132 @@ class AWS:
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(f'ERROR: {e}')
             return False
 
+##################################################################################################
+##########################################  {{ SNS }}  ###########################################
+##################################################################################################
+    def listTopics(self):  
+        try:
+            SNS = self.session.client('sns')
+            allTopics = []
+            response = SNS.list_topics()
+            
+            if 'Topics' in response: 
+                allTopics.extend(response['Topics'])
+                while 'NextToken' in response:
+                    response = SNS.list_topics(NextToken=response['NextToken'])
+                    allTopics.extend(response['Topics'])
+                return allTopics
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+    
+    def getTopicAttributes(self, TopicArn):
+        try:
+            SNS = self.session.client('sns')
+            response = SNS.get_topic_attributes( TopicArn=TopicArn )
+            if 'Attributes' in response: return response['Attributes']
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def enableTopicEncryption(self, TopicArn, KeyId='alias/aws/sns'):
+        try:
+            SNS = self.session.client('sns')
+            response = SNS.set_topic_attributes(
+                TopicArn=TopicArn,
+                AttributeName='KmsMasterKeyId',
+                AttributeValue=KeyId
+            )
+            if 'ResponseMetadata' in response and response['ResponseMetadata']['HTTPStatusCode'] == 200: 
+                return True
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def enableTopicLogging(self, TopicArn):
+        try:
+            SNS = self.session.client('sns')
+            accountId = self.session.client('sts').get_caller_identity()['Account']
+            response = SNS.set_topic_attributes(
+                TopicArn=TopicArn,
+                AttributeName='HTTPFailureFeedbackRoleArn',
+                AttributeValue=f'arn:aws:iam::{accountId}:role/SNSFailureFeedback'
+            )
+            response = SNS.set_topic_attributes(
+                TopicArn=TopicArn,
+                AttributeName='HTTPSuccessFeedbackRoleArn',
+                AttributeValue=f'arn:aws:iam::{accountId}:role/SNSSuccessFeedback'
+            )
+            response = SNS.set_topic_attributes(
+                TopicArn=TopicArn,
+                AttributeName='HTTPSuccessFeedbackSampleRate',
+                AttributeValue='0'
+            )
+            if 'ResponseMetadata' in response and response['ResponseMetadata']['HTTPStatusCode'] == 200: 
+                return True
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+##################################################################################################
+##########################################  {{ SQS }}  ###########################################
+##################################################################################################
+
+    def listQueues(self):  
+        try:
+            response = self.sqs_client.list_queues()
+            if 'QueueUrls' in response: return response['QueueUrls']
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+    
+    def getQueueAttributes(self, queueUrl):
+        try:
+            response = self.sqs_client.get_queue_attributes(
+                QueueUrl=queueUrl,
+                AttributeNames=['KmsMasterKeyId','KmsDataKeyReusePeriodSeconds','SqsManagedSseEnabled']
+            )
+            if 'Attributes' in response: return response['Attributes']
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def enableQueueEncryption(self, queueUrl, attributes):
+        try:
+            response = self.sqs_client.set_queue_attributes(
+                QueueUrl=queueUrl,
+                Attributes=attributes
+            )
+            if 'ResponseMetadata' in response and response['ResponseMetadata']['HTTPStatusCode'] == 200: 
+                return True
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
 
 
 ##################################################################################################
@@ -299,21 +437,21 @@ class AWS:
                 Description=desc,
                 Overwrite=overwrite
             )
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         return response
 
     def getEnvVariable(self, name):
         try: response = self.ssm_client.get_parameter(Name=name, WithDecryption=True)
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         return response['Parameter']['Value']
     
     def deleteEnvVariable(self, name):
         try: response = self.ssm_client.delete_parameter(Name=name)
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         return print(f"{name} deleted.")
@@ -324,7 +462,7 @@ class AWS:
 ##################################################################################################
     def getSecurityGroups(self):
         try: response = self.ec2_client.describe_security_groups()
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         logging.info(response)
@@ -335,12 +473,9 @@ class AWS:
 ##################################################################################################
     def getRepos(self):
         try: response = self.ecr_client.describe_repositories()
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
-        logging.info('***** ALL REPOSITORIES *****')
-        logging.info(pformat(response['repositories']))
-        logging.info('')
         return response['repositories']
 
     def enableImageScanning(self, repo, accountId):
@@ -349,7 +484,7 @@ class AWS:
             repositoryName=repo,
             imageScanningConfiguration={ 'scanOnPush': True }
         )
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         logging.info(pformat(response))
@@ -361,7 +496,7 @@ class AWS:
             repositoryName=repo,
             imageTagMutability='IMMUTABLE'
         )
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         logging.info(pformat(response))
@@ -373,7 +508,7 @@ class AWS:
             repositoryName=repo,
             lifcyclePolicyText=policy
         )
-        except exceptions.ClientError as e:
+        except ClientError as e:
             logging.error(e)
             return False
         logging.info(pformat(response))

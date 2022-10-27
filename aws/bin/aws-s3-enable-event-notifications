@@ -63,19 +63,19 @@ def main():
     }
 
     for bucket in BUCKETS:
-        bucketConfig = AWS().getEventNotifications(bucket.name)
+        bucketConfig = AWS().getEventNotifications(bucket['Name'])
         if not bucketConfig: continue
         if bucketConfig and 'TopicConfigurations' in bucketConfig:
             if next((item for item in bucketConfig['TopicConfigurations'] if item['Id'] == 'qsi-it-s3-events'), None):
-                logging.info(f"WARNING: Event notifications already enabled on {bucket.name}. Skipping...\n")
+                logging.info(f"WARNING: Event notifications already enabled on {bucket['Name']}. Skipping...\n")
                 continue
             else: bucketConfig['TopicConfigurations'].append(TOPIC_CONFIG)
         else: bucketConfig['TopicConfigurations'] = [ TOPIC_CONFIG ]
         if 'ResponseMetadata' in bucketConfig: del bucketConfig['ResponseMetadata']
-        logging.info(f"{bucket.name}\n{bucketConfig}")
+        logging.info(f"{bucket['Name']}\n{bucketConfig}")
         #input(f"Waiting for you")
-        if AWS().setEventNotifications(bucket.name, bucketConfig):
-            logging.info(f"SUCCESS: Event notifications enabled on {bucket.name}.\n")
-        else: logging.error(f"ERROR: Notifications NOT enabled on {bucket.name}.\n")
+        if AWS().setEventNotifications(bucket['Name'], bucketConfig):
+            logging.info(f"SUCCESS: Event notifications enabled on {bucket['Name']}.\n")
+        else: logging.error(f"ERROR: Notifications NOT enabled on {bucket['Name']}.\n")
 
 if __name__ == '__main__': main()

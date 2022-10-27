@@ -1,5 +1,5 @@
 import requests
-from AWS import AWS
+from lib.AWS import AWS
 #!/usr/bin/env python3
 import csv
 import os
@@ -22,7 +22,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 from datetime import datetime
-from AWS import AWS
+from lib.AWS import AWS
 
 class Zoom:
     '''
