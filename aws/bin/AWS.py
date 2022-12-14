@@ -22,9 +22,11 @@ class AWS:
         self.ssm_client = boto3.client('ssm')
         self.s3_client = boto3.client('s3')
         self.s3_resource = boto3.resource('s3')
+        self.ec2_resource = boto3.resource('ec2')
         self.ec2_client = boto3.client('ec2')
         self.ecr_client = boto3.client('ecr')
         self.sqs_client = boto3.client('sqs')
+        self.rg_client = boto3.client('resource-groups')
 
 ##################################################################################################
 #####################################  {{ CLOUDFORMATION }}  #####################################
@@ -264,7 +266,7 @@ class AWS:
                 BucketLoggingStatus={
                     'LoggingEnabled': {
                         'TargetBucket': targetBucket,
-                        'TargetPrefix': f's3-access-logs/{bucket}'
+                        'TargetPrefix': f's3-access-logs/{bucket}/'
                     }
                 }
             )
@@ -467,6 +469,74 @@ class AWS:
             return False
         logging.info(response)
         return response
+    
+    def getEc2Resources(self, dept):
+        departments = {
+            'chips': 'chips-ec2-resources',
+            'cloud': 'cloud-ec2-resources',
+            'it': 'it-ec2-resources',
+            'rnd': 'rnd-ec2-resources'
+        }
+        try: 
+            response = self.rg_client.list_group_resources(
+            Group=departments[dept],
+            Filters=[{
+                'Name': 'resource-type',
+                'Values': [ 'AWS::EC2::Instance']
+            }]
+        )
+            if 'ResponseMetadata' in response: return response['Resources']
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def getInstance(self, id):
+        try: 
+            response = self.ec2_client.describe_instances( InstanceIds=[id] )
+
+            if response['Reservations']: return response['Reservations'][0]['Instances'][0]
+            else: 
+                logging.error(f'ERROR: Instance may no longer exist. {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def getImages(self):
+        try: 
+            response = self.ec2_client.describe_images(Owners=['300212233050'])
+            if 'ResponseMetadata' in response: return response['Images']
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def getVolumes(self, ids):
+        try: 
+            response = self.ec2_client.describe_volumes(VolumeIds=ids)
+            if 'ResponseMetadata' in response: return response['Volumes']
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
+    def getNetworkInterfaces(self, ids):
+        try: 
+            response = self.ec2_client.describe_network_interfaces(NetworkInterfaceIds=ids)
+            if 'ResponseMetadata' in response: return response['NetworkInterfaces']
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
 
 ##################################################################################################
 ###############################  {{ ELASTIC CONTAINER REGISTRY }}  ###############################
@@ -513,6 +583,23 @@ class AWS:
             return False
         logging.info(pformat(response))
         return response
+
+#### TAG RESOURCES
+    def tagResource(self, resource, tags):
+        tagger = boto3.client('resourcegroupstaggingapi')
+        try: 
+            response = tagger.tag_resources(
+                ResourceARNList=[ resource ],
+                Tags=tags
+            )
+            if 'ResponseMetadata' in response: return response
+            else: 
+                logging.error(f'ERROR: {response}')
+                return False
+        except ClientError as e:
+            logging.error(f'ERROR: {e}')
+            return False
+
 
 if __name__ == '__main__':
     A = AWS()

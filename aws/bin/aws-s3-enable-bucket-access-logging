@@ -32,7 +32,7 @@ if not args.target:
 
 ### LOGGER FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 logging.basicConfig(
-    filename=f'{SYSADMINTOOLS_DIR}/log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-s3-enable-bucket-access-logging.log', 
+    filename=f'../log/{datetime.now().strftime("%Y-%m-%d-%H:%M")}-aws-s3-enable-bucket-access-logging.log', 
     filemode='w', 
     format='%(message)s',
     level=logging.INFO
@@ -43,20 +43,20 @@ logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 ### MAIN FUNCTION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def main():
-    BUCKET_ARGS = args.buckets.split(',') or None
+    BUCKET_ARGS = args.buckets.split(',') if args.buckets else None
     S3_BUCKETS = [ AWS().getBucket(bucket) for bucket in BUCKET_ARGS ] if args.buckets else AWS().listBuckets()
     print(BUCKET_ARGS)
     print(S3_BUCKETS)
     
     for bucket in S3_BUCKETS:
-        logging.info(f"INFO: Looking for access logging policy on {bucket.name}...")
-        loggingEnabled = AWS().getBucketLoggingStatus(bucket.name)
-        if loggingEnabled and loggingEnabled['LoggingEnabled']['TargetPrefix'] == f"s3-access-logs/{bucket.name}": 
-            logging.warning(f"WARN: {bucket.name} already has logging enabled.\n{loggingEnabled}")
-            logging.warning(f"WARN: Skipping {bucket.name}\n")
-        elif AWS().enableBucketLogging(bucket.name, args.target):
-            logging.info(f"INFO: Access logging now enabled on {bucket.name}\n")
+        logging.info(f"INFO: Looking for access logging policy on {bucket['Name']}...")
+        loggingEnabled = AWS().getBucketLoggingStatus(bucket['Name'])
+        if loggingEnabled and loggingEnabled['LoggingEnabled']['TargetPrefix'] == f"s3-access-logs/{bucket['Name']}/": 
+            logging.warning(f"WARN: {bucket['Name']} already has logging enabled.\n{loggingEnabled}")
+            logging.warning(f"WARN: Skipping {bucket['Name']}\n")
+        elif AWS().enableBucketLogging(bucket['Name'], args.target):
+            logging.info(f"INFO: Access logging now enabled on {bucket['Name']}\n")
         else: 
-            logging.info(f"ERROR: Access logging not enabled on {bucket.name}.\n")
+            logging.info(f"ERROR: Access logging not enabled on {bucket['Name']}.\n")
 
 if __name__ == '__main__': main()
