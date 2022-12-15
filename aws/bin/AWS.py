@@ -478,14 +478,26 @@ class AWS:
             'rnd': 'rnd-ec2-resources'
         }
         try: 
+            allResources = set()
             response = self.rg_client.list_group_resources(
-            Group=departments[dept],
-            Filters=[{
-                'Name': 'resource-type',
-                'Values': [ 'AWS::EC2::Instance']
-            }]
-        )
-            if 'ResponseMetadata' in response: return response['Resources']
+                Group=departments[dept],
+                Filters=[{
+                    'Name': 'resource-type',
+                    'Values': [ 'AWS::ResourceGroups::Group']
+                }]
+            )
+            for group in response['Resources']:
+                response = self.rg_client.list_group_resources(
+                    Group=group['Identifier']['ResourceArn'].split('/')[1],
+                    Filters=[{
+                        'Name': 'resource-type',
+                        'Values': [ 'AWS::EC2::Instance']
+                    }]
+                )
+                
+                allResources.update([ i['Identifier']['ResourceArn'] for i in response['Resources'] ])
+            logging.info(allResources)
+            if allResources: return allResources
             else: 
                 logging.error(f'ERROR: {response}')
                 return False
